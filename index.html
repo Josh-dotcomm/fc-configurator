@@ -138,8 +138,6 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 .toast{position:fixed;bottom:20px;right:20px;background:var(--text);color:#fff;padding:9px 16px;border-radius:var(--radius);font-size:13px;font-weight:500;opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none;z-index:9999}
 .toast.show{opacity:1;transform:translateY(0)}
 
-/* SCHEMA BADGE */
-.schema-badge{display:inline-block;background:rgba(232,101,10,.1);border:1px solid rgba(232,101,10,.3);color:var(--accent);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.04em}
 </style>
 </head>
 <body>
@@ -215,10 +213,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
   <div class="sec">
     <div class="slabel">Klantlogo (midden boven)</div>
     <div class="trow"><span>Tonen</span><button class="tog on" id="togCust" onclick="toggleEl('cust')"></button></div>
-    <div class="field"><label>Tekst (fallback)</label>
-      <input type="text" id="fldCustTxt" value="LOGO" maxlength="8" oninput="setCustText()">
-    </div>
-    <div class="upzone" onclick="document.getElementById('custUp').click()">🏷️ Upload klantlogo</div>
+    <div class="upzone" onclick="document.getElementById('custUp').click()">Upload klantlogo (PNG)</div>
     <input type="file" id="custUp" accept="image/*" style="display:none" onchange="uploadCust(event)">
     <img class="upthumb" id="custThumb">
     <span class="uprem" id="custRem" onclick="removeCust()">Verwijderen</span>
@@ -231,15 +226,14 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
   <div id="poster" style="width:380px;height:537px">
     <div id="posterBg"></div>
     <div id="posterGlow"></div>
-    <div class="p-wm" id="pwm" style="width:22%;height:22%;top:-3%;left:-3%;opacity:.24;display:none">
-      <img id="pwmImg" src="" alt="">
+    <div class="p-wm" id="pwm" style="opacity:.24">
+      <img id="pwmImg" src="https://cdn.jsdelivr.net/gh/Josh-dotcomm/fc-configurator@main/assets/fc-logo.png" alt="" crossorigin="anonymous">
     </div>
-    <div class="p-halal" id="phalal" style="width:11%;height:11%;top:2.5%;right:3%;display:none">
-      <img id="phalalImg" src="" alt="">
+    <div class="p-halal" id="phalal">
+      <img id="phalalImg" src="https://cdn.jsdelivr.net/gh/Josh-dotcomm/fc-configurator@main/assets/halal-logo.png" alt="" crossorigin="anonymous">
     </div>
-    <div class="p-custlogo" id="pcust" style="width:18%;height:18%;top:2%;left:50%;transform:translateX(-50%)">
-      <span id="pcustTxt">LOGO</span>
-      <img id="pcustImg" src="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%">
+    <div class="p-custlogo" id="pcust" style="width:18%;height:18%;top:2%;left:50%;transform:translateX(-50%);display:none">
+      <img id="pcustImg" src="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%">
     </div>
     <div id="pslots"></div>
   </div>
@@ -252,18 +246,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
   <div class="sec">
     <div class="slabel">Vaste logo's</div>
     <div class="trow"><span>Family Chicken watermark</span><button class="tog on" id="togWm" onclick="toggleEl('wm')"></button></div>
-    <div class="upzone" onclick="document.getElementById('wmUp').click()">🏷️ Upload FC logo (PNG)</div>
-    <input type="file" id="wmUp" accept="image/*" style="display:none" onchange="uploadWm(event)">
-    <img class="upthumb" id="wmThumb">
-    <span class="uprem" id="wmRem" onclick="removeWm()">Verwijderen</span>
-
-    <div style="margin-top:10px">
     <div class="trow"><span>Halal-logo</span><button class="tog on" id="togHalal" onclick="toggleEl('halal')"></button></div>
-    <div class="upzone" onclick="document.getElementById('halalUp').click()">☪️ Upload halal logo (PNG)</div>
-    <input type="file" id="halalUp" accept="image/*" style="display:none" onchange="uploadHalal(event)">
-    <img class="upthumb" id="halalThumb">
-    <span class="uprem" id="halalRem" onclick="removeHalal()">Verwijderen</span>
-    </div>
   </div>
 
   <!-- Kleurschema -->
@@ -315,7 +298,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 // ═══════════════════════════════════════════════════════════
 // PRODUCT LIBRARY
 // ═══════════════════════════════════════════════════════════
-const BASE_URL = 'https://raw.githubusercontent.com/Josh-dotcomm/fc-configurator/main/producten/';
+const BASE_URL = 'https://cdn.jsdelivr.net/gh/Josh-dotcomm/fc-configurator@main/producten/';
 
 const LIBRARY = [
   {key:'20220', art:'20220', name:'Hotwings Crispy',              nameShort:'HOTWINGS\nCRISPY',    kicker:'CRISPY',      price:'', img:'20220-hotwings-crispy.png'},
@@ -511,10 +494,12 @@ function renderPoster() {
   wm.style.left   = (-wmSize * .18) + 'px';
   wm.style.transform = 'rotate(-18deg)';
   wm.style.transformOrigin = 'top left';
+  wm.style.display = vis.wm ? '' : 'none';
 
   const hal = document.getElementById('phalal');
   hal.style.width = (W*.11)+'px'; hal.style.height = (H*.11)+'px';
   hal.style.top = (H*.025)+'px'; hal.style.right = (W*.03)+'px';
+  hal.style.display = vis.halal ? '' : 'none';
 
   // Customer logo
   const cl = document.getElementById('pcust');
@@ -600,7 +585,6 @@ function loadFields() {
   if (p.imageUrl) { thumb.src=p.imageUrl; thumb.classList.add('show'); rem.classList.add('show'); }
   else            { thumb.classList.remove('show'); rem.classList.remove('show'); }
   updateLibHighlight();
-  document.getElementById('libBadge').textContent = p.imageUrl ? 'eigen foto' : 'bibliotheek';
 }
 
 function updateLibHighlight() {
@@ -659,7 +643,6 @@ function uploadProd(e) {
 }
 function removeProd() {
   S.products[S.active].imageUrl='';
-  document.getElementById('libBadge').textContent='bibliotheek';
   renderPoster(); loadFields();
 }
 
@@ -673,59 +656,22 @@ function toggleEl(key) {
   const ids = {wm:['togWm','pwm'], halal:['togHalal','phalal'], cust:['togCust','pcust']};
   const [togId, elId] = ids[key];
   document.getElementById(togId).classList.toggle('on', vis[key]);
-  const el = document.getElementById(elId);
-  // only show if there's content (or it's cust which always shows)
-  if (key==='cust') el.style.display = vis[key] ? '' : 'none';
-  else {
-    const hasImg = key==='wm' ? document.getElementById('pwmImg').src.startsWith('blob')
-                              : document.getElementById('phalalImg').src.startsWith('blob');
-    el.style.display = (vis[key] && hasImg) ? '' : 'none';
-  }
+  document.getElementById(elId).style.display = vis[key] ? '' : 'none';
 }
 
-function uploadWm(e) {
-  const f=e.target.files[0]; if(!f) return;
-  const url=URL.createObjectURL(f);
-  document.getElementById('pwmImg').src=url;
-  document.getElementById('pwm').style.display=vis.wm?'':'none';
-  setThumb('wmThumb','wmRem',url);
-  e.target.value='';
-}
-function removeWm() {
-  document.getElementById('pwmImg').src='';
-  document.getElementById('pwm').style.display='none';
-  clearThumb('wmThumb','wmRem');
-}
-function uploadHalal(e) {
-  const f=e.target.files[0]; if(!f) return;
-  const url=URL.createObjectURL(f);
-  document.getElementById('phalalImg').src=url;
-  document.getElementById('phalal').style.display=vis.halal?'':'none';
-  setThumb('halalThumb','halalRem',url);
-  e.target.value='';
-}
-function removeHalal() {
-  document.getElementById('phalalImg').src='';
-  document.getElementById('phalal').style.display='none';
-  clearThumb('halalThumb','halalRem');
-}
 function uploadCust(e) {
   const f=e.target.files[0]; if(!f) return;
   const url=URL.createObjectURL(f);
   const img=document.getElementById('pcustImg');
-  img.src=url; img.style.display='block';
-  document.getElementById('pcustTxt').style.display='none';
+  img.src=url;
+  document.getElementById('pcust').style.display=vis.cust?'':'none';
   setThumb('custThumb','custRem',url);
   e.target.value='';
 }
 function removeCust() {
-  document.getElementById('pcustImg').style.display='none';
-  document.getElementById('pcustTxt').style.display='';
+  document.getElementById('pcustImg').src='';
+  document.getElementById('pcust').style.display='none';
   clearThumb('custThumb','custRem');
-}
-function setCustText() {
-  const v=document.getElementById('fldCustTxt').value.toUpperCase();
-  document.getElementById('pcustTxt').textContent=v;
 }
 function setThumb(tid,rid,url) {
   const t=document.getElementById(tid); t.src=url; t.classList.add('show');
@@ -772,11 +718,10 @@ function setFmt(el,w,h) {
 function saveConfig() {
   const data = {
     count:S.count, active:S.active,
-    products:S.products.map(p=>({...p,imageUrl:''})), // strip blob urls
+    products:S.products.map(p=>({...p,imageUrl:p.imageUrl.startsWith('blob')?'':p.imageUrl})),
     accent:S.accent, colorL:S.colorL, colorR:S.colorR,
     fmtW:S.fmtW, fmtH:S.fmtH,
     showWm:vis.wm, showHalal:vis.halal, showCust:vis.cust,
-    custText:document.getElementById('fldCustTxt').value,
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');
@@ -844,46 +789,36 @@ function downloadPNG() {
   });
 
   // Watermark
-  const wmSrc=document.getElementById('pwmImg').src;
-  if(vis.wm && wmSrc.startsWith('blob')) {
-    tasks.push(loadImg(wmSrc,img=>{
+  if(vis.wm) {
+    const wmSize=W*.28;
+    tasks.push(loadImg('https://cdn.jsdelivr.net/gh/Josh-dotcomm/fc-configurator@main/assets/fc-logo.png',img=>{
       ctx.save(); ctx.globalAlpha=.24;
-      ctx.drawImage(img,-W*.03,-H*.03,W*.22,H*.22);
+      ctx.translate(-wmSize*.18, -wmSize*.18);
+      ctx.rotate(-18*Math.PI/180);
+      ctx.drawImage(img,0,0,wmSize,wmSize);
       ctx.restore();
     }));
   }
 
   // Halal
-  const hSrc=document.getElementById('phalalImg').src;
-  if(vis.halal && hSrc.startsWith('blob')) {
-    tasks.push(loadImg(hSrc,img=>{
+  if(vis.halal) {
+    tasks.push(loadImg('https://cdn.jsdelivr.net/gh/Josh-dotcomm/fc-configurator@main/assets/halal-logo.png',img=>{
       ctx.drawImage(img,W-W*.03-W*.11,H*.025,W*.11,H*.11);
     }));
   }
 
   // Customer logo
-  if(vis.cust) {
-    const cSrc=document.getElementById('pcustImg').src;
+  const cSrc=document.getElementById('pcustImg').src;
+  if(vis.cust && cSrc.startsWith('blob')) {
     const clSize=W*.18, clX=(W-clSize)/2, clY=H*.025;
-    if(cSrc.startsWith('blob')) {
-      tasks.push(loadImg(cSrc,img=>{
-        ctx.save();
-        ctx.beginPath(); ctx.arc(clX+clSize/2,clY+clSize/2,clSize/2,0,Math.PI*2); ctx.clip();
-        ctx.drawImage(img,clX,clY,clSize,clSize);
-        ctx.restore();
-        // border
-        ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=2.5*scale/3;
-        ctx.beginPath(); ctx.arc(clX+clSize/2,clY+clSize/2,clSize/2,0,Math.PI*2); ctx.stroke();
-      }));
-    } else {
-      // text fallback
-      ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=2.5*scale/3;
+    tasks.push(loadImg(cSrc,img=>{
+      ctx.save();
+      ctx.beginPath(); ctx.arc(clX+clSize/2,clY+clSize/2,clSize/2,0,Math.PI*2); ctx.clip();
+      ctx.drawImage(img,clX,clY,clSize,clSize);
+      ctx.restore();
+      ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=2.5;
       ctx.beginPath(); ctx.arc(clX+clSize/2,clY+clSize/2,clSize/2,0,Math.PI*2); ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,.85)';
-      ctx.font=`900 ${scaledFS(13,H)*scale/1}px 'Barlow Condensed',sans-serif`;
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(document.getElementById('fldCustTxt').value||'LOGO', clX+clSize/2, clY+clSize/2);
-    }
+    }));
   }
 
   Promise.all(tasks).then(()=>{
@@ -935,18 +870,19 @@ function drawTextCanvas(ctx,p,tx,ty,W,H,scale) {
 // RESET
 // ═══════════════════════════════════════════════════════════
 function resetAll() {
-  S={count:2,active:0,products:[],showWm:true,showHalal:true,showCust:true,
-     custText:'LOGO',accent:'#E8650A',colorL:'#7a2800',colorR:'#0d0604',fmtW:380,fmtH:537};
-  vis={wm:true,halal:true,cust:true};
+  S={count:2,active:0,products:[],accent:'#E8650A',colorL:'#7a2800',colorR:'#0d0604',fmtW:380,fmtH:537};
+  vis={wm:true,halal:true,cust:false};
   initProducts();
   document.getElementById('clrA').value='#E8650A';
   document.getElementById('clrL').value='#7a2800';
   document.getElementById('clrR').value='#0d0604';
-  document.getElementById('fldCustTxt').value='LOGO';
-  document.getElementById('pcustTxt').textContent='LOGO';
-  document.getElementById('pcustImg').style.display='none';
-  document.getElementById('pcustTxt').style.display='';
-  ['togWm','togHalal','togCust'].forEach(id=>document.getElementById(id).classList.add('on'));
+  document.getElementById('pcustImg').src='';
+  document.getElementById('pcust').style.display='none';
+  document.getElementById('custThumb').classList.remove('show');
+  document.getElementById('custRem').classList.remove('show');
+  document.getElementById('togWm').classList.add('on');
+  document.getElementById('togHalal').classList.add('on');
+  document.getElementById('togCust').classList.remove('on');
   syncAllHex();
   buildTabs(); renderPoster(); loadFields();
   showToast('Reset ✓');
