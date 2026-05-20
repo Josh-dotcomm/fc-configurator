@@ -76,7 +76,6 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 .lib-result-img{width:44px;height:44px;object-fit:contain;flex-shrink:0;border-radius:4px;background:var(--bg)}
 .lib-result-img-ph{width:44px;height:44px;flex-shrink:0;border-radius:4px;background:var(--bg);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)}
 .lib-result-info{flex:1;min-width:0}
-.lib-result-art{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.05em}
 .lib-result-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lib-noresult{font-size:12px;color:var(--muted);padding:8px 0;text-align:center}
 
@@ -100,8 +99,9 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 
 /* FIXED POSTER ELEMENTS (logo + halal) */
 .p-wm{position:absolute;top:0;left:0;pointer-events:none;z-index:20;transition:opacity .2s}
-.p-wm img,.p-halal img{width:100%;height:100%;object-fit:contain;display:block}
+.p-wm img{width:100%;height:100%;object-fit:contain;display:block}
 .p-halal{position:absolute;top:0;right:0;pointer-events:none;z-index:20;transition:opacity .2s}
+.p-halal img{width:100%;height:100%;object-fit:contain;display:block;mix-blend-mode:screen}
 
 /* PRODUCT SLOTS — purely positioned, no drag */
 .p-slot{position:absolute;z-index:5;pointer-events:none;transition:all .25s}
@@ -115,21 +115,15 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 .p-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;color:#fff;line-height:.94;text-transform:uppercase;white-space:pre-line;text-shadow:0 2px 8px rgba(0,0,0,.45)}
 .p-price{font-family:'Barlow Condensed',sans-serif;font-weight:700;margin-top:4px;color:#F5A623}
 
-/* CUSTOMER LOGO CIRCLE */
-.p-custlogo{position:absolute;z-index:15;pointer-events:none;border-radius:50%;border:2.5px solid rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:900;color:rgba(255,255,255,.85);overflow:hidden;background:rgba(255,255,255,.06)}
-.p-custlogo img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.p-custlogo span{font-size:13px;letter-spacing:.06em}
+/* CUSTOMER LOGO — vrij uploadbaar beeld */
+.p-custlogo{position:absolute;z-index:15;pointer-events:none;overflow:visible}
+.p-custlogo img{width:100%;height:100%;object-fit:contain;display:block}
 
 /* FORMAT CHIPS (block style) */
 .fmt-chips{display:flex;flex-direction:column;gap:5px}
 .fmt-chip{padding:7px 12px;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;background:#fff;border:1px solid var(--border);color:var(--muted);transition:all .15s;text-align:left;display:flex;align-items:center;justify-content:space-between}
 .fmt-chip.on{background:rgba(232,101,10,.08);border-color:var(--accent);color:var(--accent)}
 .fmt-chip small{font-size:10px;opacity:.7;font-weight:400}
-
-/* COLOR PRESETS */
-.cpre{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.cpre-sw{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:all .15s}
-.cpre-sw.on{border-color:var(--text);transform:scale(1.15)}
 
 /* SCROLLBAR */
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
@@ -194,8 +188,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
   <div class="sec">
     <div class="slabel">Productfoto</div>
     <div class="field">
-      <label>Zoek op naam of artikelnummer</label>
-      <input type="text" id="libSearch" placeholder="bijv. 20120 of hotwings" oninput="filterLib()">
+      <input type="text" id="libSearch" placeholder="Zoek op productnaam..." oninput="filterLib()">
     </div>
     <div id="libResults"></div>
     <div style="margin-top:8px">
@@ -249,32 +242,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
     <div class="trow"><span>Halal-logo</span><button class="tog on" id="togHalal" onclick="toggleEl('halal')"></button></div>
   </div>
 
-  <!-- Kleurschema -->
-  <div class="sec">
-    <div class="slabel">Kleurschema</div>
-    <div class="cpre" id="cpresets"></div>
-    <div class="field" style="margin-bottom:7px">
-      <label>Accentkleur</label>
-      <div class="crow">
-        <input type="color" id="clrA" value="#E8650A" oninput="applyColors()">
-        <input type="text" id="clrAh" value="#E8650A" oninput="syncHex('clrA','clrAh')">
-      </div>
-    </div>
-    <div class="field" style="margin-bottom:7px">
-      <label>Kleur links (warm)</label>
-      <div class="crow">
-        <input type="color" id="clrL" value="#7a2800" oninput="applyColors()">
-        <input type="text" id="clrLh" value="#7a2800" oninput="syncHex('clrL','clrLh')">
-      </div>
-    </div>
-    <div class="field">
-      <label>Kleur rechts (donker)</label>
-      <div class="crow">
-        <input type="color" id="clrR" value="#0d0604" oninput="applyColors()">
-        <input type="text" id="clrRh" value="#0d0604" oninput="syncHex('clrR','clrRh')">
-      </div>
-    </div>
-  </div>
+
 
   <!-- Formaat -->
   <div class="sec">
@@ -293,6 +261,9 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 </div><!-- end workspace -->
 
 <div class="toast" id="toast"></div>
+<input type="hidden" id="clrA" value="#E8650A">
+<input type="hidden" id="clrL" value="#7a2800">
+<input type="hidden" id="clrR" value="#0d0604">
 
 <script>
 // ═══════════════════════════════════════════════════════════
@@ -304,49 +275,37 @@ const LIBRARY = [
   {key:'20220', art:'20220', name:'Hotwings Crispy',              nameShort:'HOTWINGS\nCRISPY',    kicker:'CRISPY',      price:'', img:'20220-hotwings-crispy.png'},
   {key:'20117', art:'20117', name:'Hot Chicken Sandwich',         nameShort:'HOT CHICKEN\nSANDWICH', kicker:'HOT & SPICY', price:'', img:'20117-hot-sandwich.png'},
   {key:'20120', art:'20120', name:'Crunchy Filetburger Original', nameShort:'CRUNCHY\nFILETBURGER', kicker:'ORIGINAL',    price:'', img:'20120-crunchy-filetburger-original.png'},
-  {key:'20421', art:'20421', name:'Family Kipnuggets',            nameShort:'FAMILY\nKIPNUGGETS',  kicker:'CRISPY',      price:'', img:'20421-family-kipnuggets2.png'},
+  {key:'20421', art:'20421', name:'Family Kipnuggets',            nameShort:'FAMILY\nKIPNUGGETS',  kicker:'CRISPY',      price:'', img:'20421-family-kipnuggets.png'},
   {key:'20500', art:'20500', name:'Chickencorn',                  nameShort:'CHICKEN\nCORN',       kicker:'CRISPY',      price:'', img:'20500-chickencorn.png'},
   {key:'20601', art:'20601', name:'Family Kipschnitzel XXL',      nameShort:'FAMILY\nKIPSCHNITZEL',kicker:'CRISPY',      price:'', img:'20601-kipschnitzel.png'},
 ];
 
 // ═══════════════════════════════════════════════════════════
-// COLOR PRESETS
-// ═══════════════════════════════════════════════════════════
-const PRESETS = [
-  {name:'FC Donker',   a:'#E8650A', l:'#7a2800', r:'#080402'},
-  {name:'FC Warm',     a:'#F5A623', l:'#8a4200', r:'#0d0804'},
-  {name:'Rood Actie',  a:'#c92525', l:'#5a1010', r:'#0a0404'},
-  {name:'Groen Vers',  a:'#3a8a2a', l:'#1a4010', r:'#060a05'},
-  {name:'Blauw Nacht', a:'#2563eb', l:'#0f2060', r:'#04080e'},
-  {name:'Zwart/Goud',  a:'#d4a21a', l:'#3a2e10', r:'#060504'},
-];
-
-// ═══════════════════════════════════════════════════════════
-// AUTO LAYOUTS — percent values [imgX, imgY, imgW, imgH, txtX, txtY]
-// per count, per slot index
+// AUTO LAYOUTS — [imgX%, imgY%, imgW%, imgH%, txtX%, txtY%]
+// Geoptimaliseerd voor A4 staand (380×537)
 // ═══════════════════════════════════════════════════════════
 const LAYOUTS = {
-  1: [[5, 10, 90, 58,  6, 73]],
-  2: [[5,  8, 55, 44, 63, 16],
-      [38, 52, 57, 40,  5, 62]],
-  3: [[4,  7, 50, 34, 57, 10],
-      [46, 40, 50, 30,  4, 44],
-      [4,  67, 50, 28, 57, 70]],
-  4: [[3,  5, 46, 26, 52,  8],
-      [51,  5, 46, 26,  3,  8],
-      [3,  50, 46, 26, 52, 54],
-      [51, 50, 46, 26,  3, 54]],
-  5: [[3,  5, 44, 22, 50,  7],
-      [50,  5, 47, 22,  3,  7],
-      [3,  35, 44, 22, 50, 37],
-      [50, 35, 47, 22,  3, 37],
-      [20, 66, 60, 28,  3, 72]],
-  6: [[2,  3, 44, 18, 48,  5],
-      [51,  3, 46, 18,  3,  5],
-      [2,  36, 44, 18, 48, 38],
-      [51, 36, 46, 18,  3, 38],
-      [2,  69, 44, 18, 48, 71],
-      [51, 69, 46, 18,  3, 71]],
+  1: [[2, 15, 96, 60,  4, 78]],
+  2: [[2,  8, 58, 46, 60, 14],
+      [2, 53, 58, 42, 60, 58]],
+  3: [[2,  6, 56, 30, 58,  8],
+      [2, 37, 56, 28, 58, 40],
+      [2, 67, 56, 27, 58, 70]],
+  4: [[2,  4, 46, 24, 50,  5],
+      [52,  4, 46, 24,  2,  5],
+      [2,  50, 46, 24, 50, 52],
+      [52, 50, 46, 24,  2, 52]],
+  5: [[2,  4, 44, 20, 48,  5],
+      [52,  4, 46, 20,  2,  5],
+      [2,  36, 44, 20, 48, 37],
+      [52, 36, 46, 20,  2, 37],
+      [22, 68, 56, 26,  2, 72]],
+  6: [[2,  3, 44, 18, 48,  4],
+      [52,  3, 46, 18,  2,  4],
+      [2,  36, 44, 18, 48, 37],
+      [52, 36, 46, 18,  2, 37],
+      [2,  69, 44, 18, 48, 70],
+      [52, 69, 46, 18,  2, 70]],
 };
 
 // Font scale per poster height (so text stays proportional)
@@ -359,10 +318,6 @@ let S = {
   count: 2,
   active: 0,
   products: [],
-  showWm: true,
-  showHalal: true,
-  showCust: true,
-  custText: 'LOGO',
   accent: '#E8650A',
   colorL: '#7a2800',
   colorR: '#0d0604',
@@ -385,7 +340,6 @@ function initProducts() {
 // ═══════════════════════════════════════════════════════════
 function init() {
   initProducts();
-  buildPresets();
   filterLib();
   buildTabs();
   applyColors();
@@ -393,35 +347,11 @@ function init() {
   loadFields();
 }
 
-// ═══════════════════════════════════════════════════════════
-// BUILD UI ELEMENTS
-// ═══════════════════════════════════════════════════════════
-function buildPresets() {
-  const el = document.getElementById('cpresets');
-  el.innerHTML = '';
-  PRESETS.forEach((p,i) => {
-    const sw = document.createElement('div');
-    sw.className = 'cpre-sw' + (i===0?' on':'');
-    sw.style.background = `linear-gradient(135deg,${p.a},${p.l})`;
-    sw.title = p.name;
-    sw.onclick = () => {
-      document.querySelectorAll('.cpre-sw').forEach(s=>s.classList.remove('on'));
-      sw.classList.add('on');
-      document.getElementById('clrA').value = p.a;
-      document.getElementById('clrL').value = p.l;
-      document.getElementById('clrR').value = p.r;
-      S.accent=p.a; S.colorL=p.l; S.colorR=p.r;
-      syncAllHex(); applyColors(); renderPoster();
-    };
-    el.appendChild(sw);
-  });
-}
-
 function filterLib() {
   const q = document.getElementById('libSearch').value.toLowerCase().trim();
   const results = q === ''
     ? LIBRARY
-    : LIBRARY.filter(p => p.name.toLowerCase().includes(q) || p.art.includes(q));
+    : LIBRARY.filter(p => p.name.toLowerCase().includes(q));
   renderLibResults(results);
 }
 
@@ -434,14 +364,13 @@ function renderLibResults(items) {
   el.innerHTML = '';
   items.forEach(p => {
     const row = document.createElement('div');
-    const isSel = S.products[S.active]?.libKey === p.key && !S.products[S.active]?.imageUrl;
+    const isSel = S.products[S.active]?.libKey === p.key;
     row.className = 'lib-result' + (isSel ? ' sel' : '');
     const imgUrl = BASE_URL + p.img;
     row.innerHTML = `
       <img class="lib-result-img" src="${imgUrl}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
       <div class="lib-result-img-ph" style="display:none">?</div>
       <div class="lib-result-info">
-        <div class="lib-result-art">${p.art}</div>
         <div class="lib-result-name">${p.name}</div>
       </div>`;
     row.onclick = () => pickLib(p.key);
@@ -688,17 +617,7 @@ function applyColors() {
   S.accent=document.getElementById('clrA').value;
   S.colorL=document.getElementById('clrL').value;
   S.colorR=document.getElementById('clrR').value;
-  syncAllHex();
   renderPoster();
-}
-function syncAllHex() {
-  document.getElementById('clrAh').value=S.accent;
-  document.getElementById('clrLh').value=S.colorL;
-  document.getElementById('clrRh').value=S.colorR;
-}
-function syncHex(cid,hid) {
-  const v=document.getElementById(hid).value;
-  if(/^#[0-9a-f]{6}$/i.test(v)){document.getElementById(cid).value=v;applyColors();}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -720,7 +639,7 @@ function saveConfig() {
     products:S.products.map(p=>({...p,imageUrl:p.imageUrl.startsWith('blob')?'':p.imageUrl})),
     accent:S.accent, colorL:S.colorL, colorR:S.colorR,
     fmtW:S.fmtW, fmtH:S.fmtH,
-    showWm:vis.wm, showHalal:vis.halal, showCust:vis.cust,
+    visWm:vis.wm, visHalal:vis.halal, visCust:vis.cust,
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');
@@ -745,7 +664,9 @@ function loadConfig(e) {
       document.getElementById('clrA').value=S.accent;
       document.getElementById('clrL').value=S.colorL;
       document.getElementById('clrR').value=S.colorR;
-      syncAllHex();
+      if(d.visWm!==undefined) vis.wm=d.visWm;
+      if(d.visHalal!==undefined) vis.halal=d.visHalal;
+      if(d.visCust!==undefined) vis.cust=d.visCust;
       buildTabs(); renderPoster(); loadFields();
       showToast('Configuratie geladen ✓');
     } catch(err){ showToast('Fout bij laden'); }
@@ -806,17 +727,16 @@ function downloadPNG() {
     }));
   }
 
-  // Customer logo
+  // Customer logo — vrij beeld zonder cirkel
   const cSrc=document.getElementById('pcustImg').src;
   if(vis.cust && cSrc.startsWith('blob')) {
-    const clSize=W*.18, clX=(W-clSize)/2, clY=H*.025;
+    const cl=document.getElementById('pcust');
+    const clX=parseFloat(cl.style.left)*W/100||W*.41;
+    const clY=parseFloat(cl.style.top)*H/100||H*.025;
+    const clW=parseFloat(cl.style.width)||W*.18;
+    const clH=parseFloat(cl.style.height)||W*.18;
     tasks.push(loadImg(cSrc,img=>{
-      ctx.save();
-      ctx.beginPath(); ctx.arc(clX+clSize/2,clY+clSize/2,clSize/2,0,Math.PI*2); ctx.clip();
-      ctx.drawImage(img,clX,clY,clSize,clSize);
-      ctx.restore();
-      ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=2.5;
-      ctx.beginPath(); ctx.arc(clX+clSize/2,clY+clSize/2,clSize/2,0,Math.PI*2); ctx.stroke();
+      ctx.drawImage(img,clX*scale/1,clY*scale/1,clW*scale/1,clH*scale/1);
     }));
   }
 
@@ -882,7 +802,6 @@ function resetAll() {
   document.getElementById('togWm').classList.add('on');
   document.getElementById('togHalal').classList.add('on');
   document.getElementById('togCust').classList.remove('on');
-  syncAllHex();
   buildTabs(); renderPoster(); loadFields();
   showToast('Reset ✓');
 }
