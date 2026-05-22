@@ -62,9 +62,18 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 
 /* PRODUCT SEARCH */
 .lib-noresult{font-size:12px;color:var(--muted);padding:8px 0;text-align:center}
-.lib-result{padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;transition:all .15s;margin-bottom:4px;font-size:12px;font-weight:600;color:var(--text)}
+.lib-result{border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:4px;font-size:12px;font-weight:600;color:var(--text);overflow:hidden}
 .lib-result:hover{border-color:var(--accent);background:rgba(232,101,10,.04)}
 .lib-result.sel{border-color:var(--accent);background:rgba(232,101,10,.10);color:var(--accent)}
+.lib-result-header{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;gap:6px}
+.lib-result-header .lib-name{flex:1}
+.lib-expand-btn{flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--muted);padding:0 2px;line-height:1;font-size:14px;transition:transform .2s}
+.lib-expand-btn.open{transform:rotate(180deg)}
+.lib-variants{display:none;padding:6px 8px 8px;border-top:1px solid var(--border);display:none;gap:6px;flex-wrap:wrap}
+.lib-variants.open{display:flex}
+.lib-variant{width:52px;height:52px;border-radius:6px;border:2px solid var(--border);object-fit:contain;background:#f5f5f5;cursor:pointer;transition:border-color .15s;flex-shrink:0}
+.lib-variant:hover{border-color:var(--accent)}
+.lib-variant.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(232,101,10,.25)}
 
 /* SLOT COUNT */
 .slot-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -330,7 +339,11 @@ const ASSET_BASE = 'https://cdn.jsdelivr.net/gh/Josh-dotcomm/fc-configurator@mai
 const SNAP_PX    = 7; // snap threshold in logical pixels
 
 const LIBRARY = [
-  {key:'20220', name:'Hotwings Crispy',              nameShort:'HOTWINGS\nCRISPY',     kicker:'CRISPY',      img:'20220-hotwings-crispy.png'},
+  {key:'20220', name:'Hotwings Crispy',              nameShort:'HOTWINGS\nCRISPY',     kicker:'CRISPY',      img:'20220-hotwings-crispy.png',
+    variants:[
+      {variantKey:'20220',         img:'20220-hotwings-crispy.png',         label:'Standaard'},
+      {variantKey:'20220-vallend', img:'20220-hotwings-crispy-vallend.png', label:'Vallend'},
+    ]},
   {key:'20117', name:'Hot Chicken Sandwich',         nameShort:'HOT CHICKEN\nSANDWICH',kicker:'HOT & SPICY', img:'20117-hot-sandwich.png'},
   {key:'20120', name:'Crunchy Filetburger Original', nameShort:'CRUNCHY\nFILETBURGER', kicker:'ORIGINAL',    img:'20120-crunchy-filetburger-original.png'},
   {key:'20421', name:'Family Kipnuggets',            nameShort:'FAMILY\nKIPNUGGETS',   kicker:'CRISPY',      img:'20421-family-kipnuggets2.png'},
@@ -400,6 +413,7 @@ function initProducts() {
     showPrice: true,
     imageUrl: BASE_URL + l.img,
     libKey: l.key,
+    libVariant: null, // null = default variant
     // Stored positions (null = use layout default on render)
     imgX:null, imgY:null, imgW:null, imgH:null,
     kikX:null, kikY:null,
@@ -938,6 +952,8 @@ function changeCount(d) {
 }
 
 // ── LIBRARY ───────────────────────────────────────────────
+let libOpenKey = null; // tracks which accordion is open
+
 function filterLib() {
   const q = document.getElementById('libSearch').value.toLowerCase().trim();
   const items = q === '' ? LIBRARY : LIBRARY.filter(p => p.name.toLowerCase().includes(q));
@@ -945,12 +961,53 @@ function filterLib() {
   el.innerHTML = '';
   if (!items.length) { el.innerHTML = '<div class="lib-noresult">Geen producten gevonden</div>'; return; }
   const active = S.products[S.active];
-  items.forEach(p => {
+  items.forEach(lib => {
+    const isSel = active && active.libKey === lib.key;
+    const hasVariants = lib.variants && lib.variants.length > 1;
+    const isOpen = libOpenKey === lib.key;
+
     const row = document.createElement('div');
-    row.className = 'lib-result' + (active && active.libKey === p.key ? ' sel' : '');
-    row.dataset.key = p.key;
-    row.textContent = p.name;
-    row.onclick = () => pickLib(p.key);
+    row.className = 'lib-result' + (isSel ? ' sel' : '');
+    row.dataset.key = lib.key;
+
+    // Header row
+    const header = document.createElement('div');
+    header.className = 'lib-result-header';
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'lib-name';
+    nameSpan.textContent = lib.name;
+    nameSpan.onclick = () => pickLib(lib.key);
+    header.appendChild(nameSpan);
+
+    if (hasVariants) {
+      const btn = document.createElement('button');
+      btn.className = 'lib-expand-btn' + (isOpen ? ' open' : '');
+      btn.title = 'Foto-opties';
+      btn.innerHTML = '&#9660;';
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        libOpenKey = isOpen ? null : lib.key;
+        filterLib();
+      };
+      header.appendChild(btn);
+    }
+    row.appendChild(header);
+
+    // Variants panel
+    if (hasVariants) {
+      const panel = document.createElement('div');
+      panel.className = 'lib-variants' + (isOpen ? ' open' : '');
+      lib.variants.forEach(v => {
+        const img = document.createElement('img');
+        img.className = 'lib-variant' + (isSel && active.libVariant === v.variantKey ? ' sel' : (isSel && !active.libVariant && v.variantKey === lib.key ? ' sel' : ''));
+        img.src = BASE_URL + v.img;
+        img.title = v.label;
+        img.onclick = (e) => { e.stopPropagation(); pickLibVariant(lib.key, v); };
+        panel.appendChild(img);
+      });
+      row.appendChild(panel);
+    }
+
     el.appendChild(row);
   });
 }
@@ -959,20 +1016,38 @@ function pickLib(key) {
   const lib = LIBRARY.find(l => l.key === key);
   if (!lib) return;
   const p = S.products[S.active];
-  p.libKey   = key;
-  p.imageUrl = BASE_URL + lib.img;
-  p.name     = lib.nameShort;
-  p.kicker   = lib.kicker;
+  p.libKey     = key;
+  p.libVariant = null; // reset to default variant
+  p.imageUrl   = BASE_URL + lib.img;
+  p.name       = lib.nameShort;
+  p.kicker     = lib.kicker;
   document.getElementById('fldName').value = p.name;
   document.querySelectorAll('#kickerChips .chip').forEach(c =>
     c.classList.toggle('on', c.dataset.val === p.kicker)
   );
-  document.querySelectorAll('#libResults .lib-result').forEach(row =>
-    row.classList.toggle('sel', row.dataset.key === key)
+  refreshImage(S.active);
+  refreshName(S.active);
+  renderPoster(); buildTabs(); loadFields();
+  filterLib();
+}
+
+function pickLibVariant(key, variant) {
+  const lib = LIBRARY.find(l => l.key === key);
+  if (!lib) return;
+  const p = S.products[S.active];
+  p.libKey     = key;
+  p.libVariant = variant.variantKey;
+  p.imageUrl   = BASE_URL + variant.img;
+  p.name       = lib.nameShort;
+  p.kicker     = lib.kicker;
+  document.getElementById('fldName').value = p.name;
+  document.querySelectorAll('#kickerChips .chip').forEach(c =>
+    c.classList.toggle('on', c.dataset.val === p.kicker)
   );
   refreshImage(S.active);
   refreshName(S.active);
-  renderPoster(); buildTabs(); loadFields(); // re-render for kicker element
+  renderPoster(); buildTabs(); loadFields();
+  filterLib();
 }
 
 // ── UPLOAD PRODUCT ────────────────────────────────────────
