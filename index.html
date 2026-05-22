@@ -195,6 +195,11 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
       <input type="range" id="fldKikSz" min="6" max="22" value="10" oninput="syncStyle();document.getElementById('kikSzV').textContent=this.value">
       <span class="sv" id="kikSzV">10</span>
     </div>
+    <div class="srow">
+      <span class="slab">Badge hoek</span>
+      <input type="range" id="fldKikRot" min="-45" max="45" value="-10" oninput="syncStyle();document.getElementById('kikRotV').textContent=this.value">
+      <span class="sv" id="kikRotV">-10</span>
+    </div>
 
     <!-- Naam -->
     <div class="field" style="margin-top:4px">
@@ -336,7 +341,7 @@ const LIBRARY = [
 // Layout per slot: [imgX%, imgY%, imgW%, imgH%, kikX%, kikY%, namX%, namY%]
 const LAYOUTS = {
   a4p: {
-    1: [[5,8,90,62,   5,73,  5,78]],
+    1: [[0,4,100,68,  5,75,  5,82]],
     2: [[3,8,55,44,  60,12, 60,22], [3,53,55,42, 60,57, 60,67]],
     3: [[3,4,52,28,  56,6,  56,14], [3,35,52,27, 56,37, 56,45], [3,66,52,26, 56,68, 56,76]],
     4: [[2,3,46,22,  50,4,  50,11], [52,3,46,22,  3,4,   3,11],
@@ -369,6 +374,7 @@ function initProducts() {
     kickerBg: '',       // '' = use S.accent
     kickerColor: '#ffffff',
     kickerSize: 10,
+    kickerRotation: -10,
     name: l.nameShort,
     nameColor: '#ffffff',
     nameSize: 28,
@@ -690,7 +696,7 @@ function renderPoster() {
       kikEl.dataset.idx = String(i);
       const kfs = scaledFS(p.kickerSize || 10, W, H);
       const kbg = p.kickerBg || S.accent;
-      kikEl.style.cssText = `left:${kx}px;top:${ky}px;z-index:${12+i}`;
+      kikEl.style.cssText = `left:${kx}px;top:${ky}px;z-index:${12+i};transform:rotate(${p.kickerRotation ?? -10}deg)`;
       kikEl.innerHTML = `<div class="p-kicker" style="background:${kbg};color:${p.kickerColor};font-size:${kfs}px">${p.kicker}</div>`;
       const kBorder = document.createElement('div'); kBorder.className = 'asset-border';
       kikEl.appendChild(kBorder);
@@ -770,6 +776,7 @@ function refreshKicker(idx) {
   const p = S.products[idx];
   const kfs = scaledFS(p.kickerSize || 10, S.fmtW, S.fmtH);
   const kbg = p.kickerBg || S.accent;
+  el.style.transform = `rotate(${p.kickerRotation ?? -10}deg)`;
   const kicker = el.querySelector('.p-kicker');
   if (kicker) {
     kicker.style.background  = kbg;
@@ -837,6 +844,9 @@ function loadFields() {
   document.getElementById('fldKikClr').value = p.kickerColor;
   document.getElementById('fldKikSz').value  = p.kickerSize || 10;
   document.getElementById('kikSzV').textContent = p.kickerSize || 10;
+  const rot = p.kickerRotation ?? -10;
+  document.getElementById('fldKikRot').value = rot;
+  document.getElementById('kikRotV').textContent = rot;
 
   document.getElementById('fldNamClr').value = p.nameColor;
   document.getElementById('fldNamSz').value  = p.nameSize || 28;
@@ -869,10 +879,11 @@ function syncProduct() {
 function syncStyle() {
   const p = S.products[S.active];
   if (!p) return;
-  p.kickerColor = document.getElementById('fldKikClr').value;
-  p.kickerSize  = parseInt(document.getElementById('fldKikSz').value) || 10;
-  p.nameColor   = document.getElementById('fldNamClr').value;
-  p.nameSize    = parseInt(document.getElementById('fldNamSz').value) || 28;
+  p.kickerColor    = document.getElementById('fldKikClr').value;
+  p.kickerSize     = parseInt(document.getElementById('fldKikSz').value) || 10;
+  p.kickerRotation = parseInt(document.getElementById('fldKikRot').value);
+  p.nameColor      = document.getElementById('fldNamClr').value;
+  p.nameSize       = parseInt(document.getElementById('fldNamSz').value) || 28;
   refreshKicker(S.active);
   refreshName(S.active);
 }
@@ -1033,7 +1044,8 @@ function applyHalalColor() {
     img.style.filter = 'brightness(0)';
     img.style.mixBlendMode = 'normal';
   } else {
-    img.style.filter = '';
+    // Invert the dark logo so it becomes white; screen blend makes it glow on dark bg
+    img.style.filter = 'invert(1)';
     img.style.mixBlendMode = '';
   }
 }
@@ -1180,7 +1192,7 @@ function downloadPNG() {
       const hh = H * .11;
       const hw = img.naturalWidth * (hh / img.naturalHeight);
       ctx.save();
-      if (halalColor === 'zwart') ctx.filter = 'brightness(0)';
+      ctx.filter = halalColor === 'zwart' ? 'brightness(0)' : 'invert(1)';
       ctx.drawImage(img, W - W*.03 - hw, H*.025, hw, hh);
       ctx.restore();
     }));
@@ -1223,11 +1235,16 @@ function drawKickerCanvas(ctx, p, x, y, W, H, scale) {
   ctx.font = `900 ${kfs}px 'Barlow Condensed',sans-serif`;
   const bw  = ctx.measureText(p.kicker).width + 14*scale;
   const bh  = kfs * 1.55;
+  const rotation = (p.kickerRotation ?? -10) * Math.PI / 180;
+  ctx.save();
+  ctx.translate(x + bw / 2, y + bh / 2);
+  ctx.rotate(rotation);
   ctx.fillStyle = p.kickerBg || S.accent;
-  ctx.fillRect(x, y, bw, bh);
+  ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
   ctx.fillStyle = p.kickerColor || '#fff';
-  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillText(p.kicker, x + 7*scale, y + bh/2);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(p.kicker, 0, 0);
+  ctx.restore();
 }
 
 function drawNameCanvas(ctx, p, x, y, nw, W, H, scale) {
