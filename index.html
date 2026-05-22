@@ -110,6 +110,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 
 /* GEDEELDE ASSET STIJLEN */
 .asset-border{display:none;position:absolute;inset:-1px;border:1.5px solid rgba(232,101,10,.8);border-radius:3px;pointer-events:none;z-index:2}
+.el-active>.asset-border{display:block;border:2px solid var(--accent);box-shadow:0 0 0 2px rgba(232,101,10,.18)}
 
 /* 4-hoek resize handles — hidden by default, show on hover/active */
 .rh{position:absolute;width:10px;height:10px;background:var(--accent);border:1.5px solid #fff;border-radius:2px;z-index:60;opacity:0;transition:opacity .12s;pointer-events:all}
@@ -122,20 +123,20 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 .p-asset{position:absolute;cursor:move;user-select:none}
 .p-asset img{width:100%;height:100%;display:block;filter:drop-shadow(0 5px 14px rgba(0,0,0,.3))}
 .p-asset:hover .asset-border,.p-asset.active-slot .asset-border{display:block}
-.p-asset:hover .rh,.p-asset.active-slot .rh{opacity:1}
+.p-asset:hover .rh,.p-asset.active-slot .rh,.p-asset.el-active .rh{opacity:1}
 .p-slot-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);border:1.5px dashed rgba(255,255,255,.14);border-radius:3px}
 .p-slot-ph span{font-size:10px;color:rgba(255,255,255,.3);font-weight:600}
 
 /* Kicker badge slot */
 .p-kicker-asset{position:absolute;cursor:move;user-select:none;z-index:12;display:inline-block}
 .p-kicker-asset:hover .asset-border,.p-kicker-asset.active-slot .asset-border{display:block}
-.p-kicker-asset:hover .rh,.p-kicker-asset.active-slot .rh{opacity:1}
+.p-kicker-asset:hover .rh,.p-kicker-asset.active-slot .rh,.p-kicker-asset.el-active .rh{opacity:1}
 .p-kicker{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-weight:900;color:#fff;padding:2px 8px;border-radius:2px;letter-spacing:.04em;text-transform:uppercase;line-height:1.3;white-space:nowrap}
 
 /* Naam slot */
 .p-name-asset{position:absolute;cursor:move;user-select:none;z-index:11;overflow:hidden}
 .p-name-asset:hover .asset-border,.p-name-asset.active-slot .asset-border{display:block}
-.p-name-asset:hover .rh,.p-name-asset.active-slot .rh{opacity:1}
+.p-name-asset:hover .rh,.p-name-asset.active-slot .rh,.p-name-asset.el-active .rh{opacity:1}
 .p-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;line-height:.94;text-transform:uppercase;white-space:pre-line;text-shadow:0 2px 8px rgba(0,0,0,.45)}
 .p-price{font-family:'Barlow Condensed',sans-serif;font-weight:700;margin-top:4px}
 
@@ -314,11 +315,11 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
     </div>
     <div class="field">
       <label>Kleur links</label>
-      <div class="crow"><input type="color" id="clrL" value="#7a2800" oninput="applyColors()"></div>
+      <div class="crow"><input type="color" id="clrL" value="#cf5e02" oninput="applyColors()"></div>
     </div>
     <div class="field">
       <label>Kleur rechts</label>
-      <div class="crow"><input type="color" id="clrR" value="#0d0604" oninput="applyColors()"></div>
+      <div class="crow"><input type="color" id="clrR" value="#000000" oninput="applyColors()"></div>
     </div>
   </div>
 
@@ -339,13 +340,13 @@ const ASSET_BASE = 'https://cdn.jsdelivr.net/gh/Josh-dotcomm/fc-configurator@mai
 const SNAP_PX    = 7; // snap threshold in logical pixels
 
 const LIBRARY = [
-  {key:'20220', name:'Hotwings Crispy',              nameShort:'HOTWINGS\nCRISPY',     kicker:'CRISPY',      img:'20220-hotwings-crispy.png',
+  {key:'20220', name:'Chicken Wings',                nameShort:'CHICKEN\nWINGS',       kicker:'CRISPY',      img:'20220-hotwings-crispy.png',
     variants:[
       {variantKey:'20220',         img:'20220-hotwings-crispy.png',         label:'Standaard'},
       {variantKey:'20220-vallend', img:'20220-hotwings-crispy-vallend.png', label:'Vallend'},
     ]},
-  {key:'20117', name:'Hot Chicken Sandwich',         nameShort:'HOT CHICKEN\nSANDWICH',kicker:'HOT & SPICY', img:'20117-hot-sandwich.png'},
-  {key:'20120', name:'Crunchy Filetburger Original', nameShort:'CRUNCHY\nFILETBURGER', kicker:'ORIGINAL',    img:'20120-crunchy-filetburger-original.png',
+  {key:'20117', name:'Chicken Burger (Hot & Spicy)', nameShort:'CHICKEN\nBURGER',      kicker:'HOT & SPICY', img:'20117-hot-sandwich.png'},
+  {key:'20120', name:'Chicken Burger (Original)',    nameShort:'CHICKEN\nBURGER',      kicker:'ORIGINAL',    img:'20120-crunchy-filetburger-original.png',
     variants:[
       {variantKey:'20120',   img:'20120-crunchy-filetburger-original.png',   label:'Standaard'},
       {variantKey:'20120-2', img:'20120-crunchy-filetburger-original-2.png', label:'Variant 2'},
@@ -353,15 +354,15 @@ const LIBRARY = [
       {variantKey:'20120-4', img:'20120-crunchy-filetburger-original-4.png', label:'Variant 4'},
     ]},
   {key:'20421', name:'Family Kipnuggets',            nameShort:'FAMILY\nKIPNUGGETS',   kicker:'CRISPY',      img:'20421-family-kipnuggets2.png'},
-  {key:'20500', name:'Chickencorn',                  nameShort:'CHICKEN\nCORN',        kicker:'CRISPY',      img:'20500-chickencorn.png'},
-  {key:'20601', name:'Family Kipschnitzel XXL',      nameShort:'FAMILY\nKIPSCHNITZEL', kicker:'CRISPY',      img:'20601-kipschnitzel.png'},
+  {key:'20500', name:'Chicken Corn',                 nameShort:'CHICKEN\nCORN',        kicker:'CRISPY',      img:'20500-chickencorn.png'},
+  {key:'20601', name:'Chicken Schnitzel',            nameShort:'CHICKEN\nSCHNITZEL',   kicker:'CRISPY',      img:'20601-kipschnitzel.png'},
 ];
 
 // Layout per slot: [imgX%, imgY%, imgW%, imgH%, kikX%, kikY%, namX%, namY%]
 const LAYOUTS = {
   a4p: {
     1: [[18,21,64,45, 37,61, 32,65]],
-    2: [[3,8,55,44,  60,12, 60,22], [3,53,55,42, 60,57, 60,67]],
+    2: [[0,13.5,53.7,38.0, 56.6,24.1, 49.1,27.1], [41.7,50.0,55.0,38.9, 12.6,62.6, 4.5,65.7]],
     3: [[3,4,52,28,  56,6,  56,14], [3,35,52,27, 56,37, 56,45], [3,66,52,26, 56,68, 56,76]],
     4: [[2,3,46,22,  50,4,  50,11], [52,3,46,22,  3,4,   3,11],
         [2,53,46,22, 50,54, 50,61], [52,53,46,22,  3,54,  3,61]],
@@ -377,6 +378,10 @@ const LAYOUTS = {
 // Per-layout style presets: kickerSize, kickerRotation, nameSize per product slot
 const LAYOUT_STYLE_PRESETS = {
   'a4p-1': [{ kickerSize:14, kickerRotation:-3, nameSize:42 }],
+  'a4p-2': [
+    { kickerSize:13, kickerRotation:-3, nameSize:40 },
+    { kickerSize:13, kickerRotation:-5, nameSize:40 },
+  ],
 };
 
 function applyLayoutPreset() {
@@ -394,12 +399,19 @@ function applyLayoutPreset() {
 // ── STATE ──────────────────────────────────────────────────
 let S = {
   count:2, active:0, products:[],
-  accent:'#E8650A', colorL:'#7a2800', colorR:'#0d0604',
+  accent:'#E8650A', colorL:'#cf5e02', colorR:'#000000',
   fmtW:380, fmtH:537, fmtKey:'a4p',
   zoom:1.0,
 };
 let vis = {wm:true, halal:true};
 let halalColor = 'wit'; // 'wit' = white (screen blend), 'zwart' = black
+let activeEl = null; // currently selected poster element
+
+function selectEl(el) {
+  if (activeEl && activeEl !== el) activeEl.classList.remove('el-active');
+  activeEl = el;
+  if (activeEl) activeEl.classList.add('el-active');
+}
 let custVisible = false;
 // Customer logo position stored separately (not per-product)
 let custState = {x:null,y:null,w:80,h:80};
@@ -409,7 +421,7 @@ function initProducts() {
     kicker: l.kicker,
     kickerBg: '',       // '' = use S.accent
     kickerColor: '#ffffff',
-    kickerSize: 10,
+    kickerSize: 14,
     kickerRotation: -10,
     name: l.nameShort,
     nameColor: '#ffffff',
@@ -435,6 +447,11 @@ function init() {
   buildTabs();
   loadFields();
   filterLib();
+  // Deselect active element when clicking poster background
+  document.getElementById('poster').addEventListener('mousedown', function(e) {
+    const draggable = e.target.closest('.p-asset,.p-kicker-asset,.p-name-asset,.p-custlogo');
+    if (!draggable) selectEl(null);
+  });
 }
 
 // ── TABS ──────────────────────────────────────────────────
@@ -538,7 +555,9 @@ function makeDraggableSnap(el, onPositionChange) {
     const startX = e.clientX, startY = e.clientY;
     const startL = parseFloat(el.style.left)||0;
     const startT = parseFloat(el.style.top)||0;
-    el.style.transform = 'none'; // remove any initial translateX
+    // Preserve rotation; strip only non-rotate transforms (e.g. old translateX)
+    const rotMatch = (el.style.transform||'').match(/rotate\([^)]+\)/);
+    if (!rotMatch) el.style.transform = '';
 
     function onMove(e) {
       const dx = (e.clientX - startX) / S.zoom;
@@ -667,6 +686,7 @@ function renderPoster() {
   applyHalalColor();
 
   // Rebuild product slots
+  activeEl = null;
   const container = document.getElementById('pslots');
   container.innerHTML = '';
   const layout = getLayout(S.count);
@@ -712,10 +732,11 @@ function renderPoster() {
     imgEl.appendChild(iBorder);
     addHandles(imgEl);
 
-    imgEl.addEventListener('mousedown', (function(idx){return function(e){
+    imgEl.addEventListener('mousedown', (function(el, idx){return function(e){
       if (e.target.classList.contains('rh')) return;
+      selectEl(el);
       S.active = idx; buildTabs(); loadFields(); highlightActive();
-    };})(i));
+    };})(imgEl, i));
     makeDraggableSnap(imgEl, el => {
       const p = S.products[parseInt(el.dataset.idx)];
       p.imgX = parseFloat(el.style.left); p.imgY = parseFloat(el.style.top);
@@ -732,7 +753,7 @@ function renderPoster() {
       const kikEl = document.createElement('div');
       kikEl.className = 'p-kicker-asset' + (isActive ? ' active-slot' : '');
       kikEl.dataset.idx = String(i);
-      const kfs = scaledFS(p.kickerSize || 10, W, H);
+      const kfs = scaledFS(p.kickerSize || 14, W, H);
       const kbg = p.kickerBg || S.accent;
       kikEl.style.cssText = `left:${kx}px;top:${ky}px;z-index:${12+i};transform:rotate(${p.kickerRotation ?? -10}deg)`;
       kikEl.innerHTML = `<div class="p-kicker" style="background:${kbg};color:${p.kickerColor};font-size:${kfs}px">${p.kicker}</div>`;
@@ -740,10 +761,11 @@ function renderPoster() {
       kikEl.appendChild(kBorder);
       addHandles(kikEl);
 
-      kikEl.addEventListener('mousedown', (function(idx){return function(e){
+      kikEl.addEventListener('mousedown', (function(el, idx){return function(e){
         if (e.target.classList.contains('rh')) return;
+        selectEl(el);
         S.active = idx; buildTabs(); loadFields(); highlightActive();
-      };})(i));
+      };})(kikEl, i));
       makeDraggableSnap(kikEl, el => {
         const p = S.products[parseInt(el.dataset.idx)];
         p.kikX = parseFloat(el.style.left); p.kikY = parseFloat(el.style.top);
@@ -776,10 +798,11 @@ function renderPoster() {
     namEl.appendChild(nBorder);
     addHandles(namEl);
 
-    namEl.addEventListener('mousedown', (function(idx){return function(e){
+    namEl.addEventListener('mousedown', (function(el, idx){return function(e){
       if (e.target.classList.contains('rh')) return;
+      selectEl(el);
       S.active = idx; buildTabs(); loadFields(); highlightActive();
-    };})(i));
+    };})(namEl, i));
     makeDraggableSnap(namEl, el => {
       const p = S.products[parseInt(el.dataset.idx)];
       p.namX = parseFloat(el.style.left); p.namY = parseFloat(el.style.top);
@@ -812,7 +835,7 @@ function refreshKicker(idx) {
   const el = document.querySelector(`.p-kicker-asset[data-idx="${idx}"]`);
   if (!el) return;
   const p = S.products[idx];
-  const kfs = scaledFS(p.kickerSize || 10, S.fmtW, S.fmtH);
+  const kfs = scaledFS(p.kickerSize || 14, S.fmtW, S.fmtH);
   const kbg = p.kickerBg || S.accent;
   el.style.transform = `rotate(${p.kickerRotation ?? -10}deg)`;
   const kicker = el.querySelector('.p-kicker');
@@ -880,8 +903,8 @@ function loadFields() {
   // Style controls
   document.getElementById('fldKikBg').value  = p.kickerBg  || S.accent;
   document.getElementById('fldKikClr').value = p.kickerColor;
-  document.getElementById('fldKikSz').value  = p.kickerSize || 10;
-  document.getElementById('kikSzV').textContent = p.kickerSize || 10;
+  document.getElementById('fldKikSz').value  = p.kickerSize || 14;
+  document.getElementById('kikSzV').textContent = p.kickerSize || 14;
   const rot = p.kickerRotation ?? -10;
   document.getElementById('fldKikRot').value = rot;
   document.getElementById('kikRotV').textContent = rot;
@@ -1360,7 +1383,7 @@ function loadImg(src, cb) {
 function drawKickerCanvas(ctx, p, x, y, W, H, scale) {
   const fh = H / scale;
   const fw = W / scale;
-  const kfs = scaledFS(p.kickerSize || 10, fw, fh) * scale;
+  const kfs = scaledFS(p.kickerSize || 14, fw, fh) * scale;
   ctx.font = `900 ${kfs}px 'Barlow Condensed',sans-serif`;
   const bw  = ctx.measureText(p.kicker).width + 14*scale;
   const bh  = kfs * 1.55;
