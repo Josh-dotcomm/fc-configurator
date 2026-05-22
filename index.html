@@ -111,7 +111,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 
 /* Foto slot */
 .p-asset{position:absolute;cursor:move;user-select:none}
-.p-asset img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 5px 14px rgba(0,0,0,.3))}
+.p-asset img{width:100%;height:100%;display:block;filter:drop-shadow(0 5px 14px rgba(0,0,0,.3))}
 .p-asset:hover .asset-border,.p-asset.active-slot .asset-border{display:block}
 .p-asset:hover .rh,.p-asset.active-slot .rh{opacity:1}
 .p-slot-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);border:1.5px dashed rgba(255,255,255,.14);border-radius:3px}
@@ -186,7 +186,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
     </div>
     <div class="srow">
       <span class="slab">Badge bg</span>
-      <input type="color" id="fldKikBg" oninput="syncStyle()">
+      <input type="color" id="fldKikBg" oninput="syncKickerBg()">
       <span class="slab" style="margin-left:4px">Tekst</span>
       <input type="color" id="fldKikClr" value="#ffffff" oninput="syncStyle()">
     </div>
@@ -218,7 +218,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
     </div>
     <div class="srow">
       <span class="slab">Prijs kleur</span>
-      <input type="color" id="fldPrjClr" oninput="syncStyle()">
+      <input type="color" id="fldPrjClr" oninput="syncPriceColor()">
     </div>
   </div>
 
@@ -288,7 +288,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
   <div class="sec">
     <div class="slabel">Achtergrondkleuren</div>
     <div class="field">
-      <label>Accentkleur</label>
+      <label>Tekstvakkleur</label>
       <div class="crow"><input type="color" id="clrA" value="#E8650A" oninput="applyColors()"></div>
     </div>
     <div class="field">
@@ -570,7 +570,7 @@ function makeDraggableSnap(el, onPositionChange) {
   });
 }
 
-// ── 4-CORNER RESIZE ──────────────────────────────────────
+// ── 4-CORNER RESIZE (uniform scale) ─────────────────────
 function makeCornerResizable(el, onResize) {
   ['tl','tr','bl','br'].forEach(corner => {
     const handle = el.querySelector('.rh-' + corner);
@@ -580,32 +580,31 @@ function makeCornerResizable(el, onResize) {
       const startX = e.clientX, startY = e.clientY;
       const startL = parseFloat(el.style.left)||0;
       const startT = parseFloat(el.style.top)||0;
-      const startW = parseFloat(el.style.width)||60;
-      const startH = parseFloat(el.style.height)||60;
+      // Use actual rendered size for correct aspect ratio (works for auto-sized elements too)
+      const rect = el.getBoundingClientRect();
+      const startW = rect.width / S.zoom;
+      const startH = rect.height / S.zoom;
+      const ar = startW / (startH || 1);
       function onMove(e) {
         const dx = (e.clientX - startX) / S.zoom;
-        const dy = (e.clientY - startY) / S.zoom;
+        let nw, nh, nl = startL, nt = startT;
         if (corner === 'br') {
-          el.style.width  = Math.max(20, startW + dx) + 'px';
-          el.style.height = Math.max(10, startH + dy) + 'px';
+          nw = Math.max(20, startW + dx);
         } else if (corner === 'bl') {
-          const nw = Math.max(20, startW - dx);
-          el.style.left   = (startL + startW - nw) + 'px';
-          el.style.width  = nw + 'px';
-          el.style.height = Math.max(10, startH + dy) + 'px';
+          nw = Math.max(20, startW - dx);
+          nl = startL + startW - nw;
         } else if (corner === 'tr') {
-          el.style.width  = Math.max(20, startW + dx) + 'px';
-          const nh = Math.max(10, startH - dy);
-          el.style.top    = (startT + startH - nh) + 'px';
-          el.style.height = nh + 'px';
+          nw = Math.max(20, startW + dx);
         } else { // tl
-          const nw = Math.max(20, startW - dx);
-          const nh = Math.max(10, startH - dy);
-          el.style.left   = (startL + startW - nw) + 'px';
-          el.style.top    = (startT + startH - nh) + 'px';
-          el.style.width  = nw + 'px';
-          el.style.height = nh + 'px';
+          nw = Math.max(20, startW - dx);
+          nl = startL + startW - nw;
         }
+        nh = nw / ar;
+        if (corner === 'tr' || corner === 'tl') nt = startT + startH - nh;
+        el.style.left   = nl + 'px';
+        el.style.top    = nt + 'px';
+        el.style.width  = nw + 'px';
+        el.style.height = nh + 'px';
       }
       function onUp() {
         if (onResize) onResize(el);
@@ -624,6 +623,29 @@ function addHandles(el) {
     h.className = 'rh rh-' + c;
     el.appendChild(h);
   });
+}
+
+// Shrink/grow the img-container so it fits the image's natural aspect ratio exactly
+function fitImgToSlot(container, img, idx) {
+  if (!img.naturalWidth || !img.naturalHeight) return;
+  const w0 = parseFloat(container.style.width);
+  const h0 = parseFloat(container.style.height);
+  if (!w0 || !h0) return;
+  const ratio = img.naturalWidth / img.naturalHeight;
+  const contRatio = w0 / h0;
+  let nw, nh;
+  if (ratio > contRatio) { nw = w0; nh = w0 / ratio; }
+  else                   { nh = h0; nw = h0 * ratio; }
+  const cx = parseFloat(container.style.left) + w0 / 2;
+  const cy = parseFloat(container.style.top)  + h0 / 2;
+  container.style.width  = nw + 'px';
+  container.style.height = nh + 'px';
+  container.style.left   = (cx - nw / 2) + 'px';
+  container.style.top    = (cy - nh / 2) + 'px';
+  if (idx !== undefined) {
+    const p = S.products[idx];
+    if (p) { p.imgW = nw; p.imgH = nh; p.imgX = cx - nw/2; p.imgY = cy - nh/2; }
+  }
 }
 
 // ── RENDER POSTER ─────────────────────────────────────────
@@ -675,8 +697,15 @@ function renderPoster() {
     imgEl.style.cssText = `left:${ix}px;top:${iy}px;width:${iw}px;height:${ih}px;z-index:${4+i}`;
     if (p.imageUrl) {
       const img = document.createElement('img');
-      img.src = p.imageUrl;
       imgEl.appendChild(img);
+      if (p.imgW === null) {
+        const _fit = () => fitImgToSlot(imgEl, img, i);
+        img.onload = _fit;
+        img.src = p.imageUrl;
+        if (img.complete && img.naturalWidth) _fit();
+      } else {
+        img.src = p.imageUrl;
+      }
     } else {
       const ph = document.createElement('div');
       ph.className = 'p-slot-ph';
@@ -822,8 +851,12 @@ function refreshImage(idx) {
   });
   if (p.imageUrl) {
     const img = document.createElement('img');
-    img.src = p.imageUrl;
+    p.imgW = null; p.imgH = null; // reset so fit runs again for the new image
+    const _fit = () => fitImgToSlot(el, img, idx);
+    img.onload = _fit;
     el.insertBefore(img, el.querySelector('.asset-border'));
+    img.src = p.imageUrl;
+    if (img.complete && img.naturalWidth) _fit();
   }
 }
 
@@ -883,13 +916,23 @@ function syncProduct() {
 function syncStyle() {
   const p = S.products[S.active];
   if (!p) return;
-  p.kickerBg    = document.getElementById('fldKikBg').value;
   p.kickerColor = document.getElementById('fldKikClr').value;
   p.kickerSize  = parseInt(document.getElementById('fldKikSz').value) || 10;
   p.nameColor   = document.getElementById('fldNamClr').value;
   p.nameSize    = parseInt(document.getElementById('fldNamSz').value) || 28;
-  p.priceColor  = document.getElementById('fldPrjClr').value;
   refreshKicker(S.active);
+  refreshName(S.active);
+}
+function syncKickerBg() {
+  const p = S.products[S.active];
+  if (!p) return;
+  p.kickerBg = document.getElementById('fldKikBg').value;
+  refreshKicker(S.active);
+}
+function syncPriceColor() {
+  const p = S.products[S.active];
+  if (!p) return;
+  p.priceColor = document.getElementById('fldPrjClr').value;
   refreshName(S.active);
 }
 
