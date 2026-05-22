@@ -132,7 +132,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 
 /* Klantlogo */
 .p-custlogo{position:absolute;cursor:move;user-select:none;z-index:18}
-.p-custlogo img{width:100%;height:100%;object-fit:contain;display:block}
+.p-custlogo img{width:100%;height:100%;display:block}
 .p-custlogo:hover .asset-border,.p-custlogo.active-slot .asset-border{display:block}
 .p-custlogo:hover .rh,.p-custlogo.active-slot .rh{opacity:1}
 
@@ -341,7 +341,7 @@ const LIBRARY = [
 // Layout per slot: [imgX%, imgY%, imgW%, imgH%, kikX%, kikY%, namX%, namY%]
 const LAYOUTS = {
   a4p: {
-    1: [[0,4,100,68,  5,75,  5,82]],
+    1: [[18,21,64,45, 37,61, 32,65]],
     2: [[3,8,55,44,  60,12, 60,22], [3,53,55,42, 60,57, 60,67]],
     3: [[3,4,52,28,  56,6,  56,14], [3,35,52,27, 56,37, 56,45], [3,66,52,26, 56,68, 56,76]],
     4: [[2,3,46,22,  50,4,  50,11], [52,3,46,22,  3,4,   3,11],
@@ -354,6 +354,23 @@ const LAYOUTS = {
         [2,70,46,17,  2,89,  2,89], [52,70,46,17, 52,89, 52,89]],
   },
 };
+
+// Per-layout style presets: kickerSize, kickerRotation, nameSize per product slot
+const LAYOUT_STYLE_PRESETS = {
+  'a4p-1': [{ kickerSize:14, kickerRotation:-3, nameSize:42 }],
+};
+
+function applyLayoutPreset() {
+  const key = S.fmtKey + '-' + S.count;
+  const preset = LAYOUT_STYLE_PRESETS[key];
+  if (!preset) return;
+  S.products.slice(0, S.count).forEach((p, i) => {
+    const pr = preset[i] || preset[preset.length - 1];
+    if (pr.kickerSize    !== undefined) p.kickerSize    = pr.kickerSize;
+    if (pr.kickerRotation !== undefined) p.kickerRotation = pr.kickerRotation;
+    if (pr.nameSize      !== undefined) p.nameSize      = pr.nameSize;
+  });
+}
 
 // ── STATE ──────────────────────────────────────────────────
 let S = {
@@ -393,6 +410,7 @@ function initProducts() {
 // ── INIT ──────────────────────────────────────────────────
 function init() {
   initProducts();
+  applyLayoutPreset();
   renderPoster();
   buildTabs();
   loadFields();
@@ -914,6 +932,8 @@ function changeCount(d) {
   if (n === S.count) return;
   S.count = n;
   if (S.active >= n) S.active = n - 1;
+  S.products.forEach(p => { p.imgX=null;p.imgY=null;p.imgW=null;p.imgH=null;p.kikX=null;p.kikY=null;p.namX=null;p.namY=null;p.namW=null; });
+  applyLayoutPreset();
   renderPoster(); buildTabs(); loadFields();
 }
 
@@ -978,14 +998,40 @@ function toggleCust() {
   const cl = document.getElementById('pcust');
   cl.style.display = custVisible && document.getElementById('pcustImg').src ? '' : 'none';
 }
+function fitCustLogo() {
+  const cl = document.getElementById('pcust');
+  const img = document.getElementById('pcustImg');
+  if (!img.naturalWidth || !img.naturalHeight) return;
+  const w0 = parseFloat(cl.style.width)  || custState.w;
+  const h0 = parseFloat(cl.style.height) || custState.h;
+  const ratio = img.naturalWidth / img.naturalHeight;
+  const contRatio = w0 / h0;
+  let nw, nh;
+  if (ratio > contRatio) { nw = w0; nh = w0 / ratio; }
+  else                   { nh = h0; nw = h0 * ratio; }
+  const cx = parseFloat(cl.style.left) + w0 / 2;
+  const cy = parseFloat(cl.style.top)  + h0 / 2;
+  cl.style.width  = nw + 'px';
+  cl.style.height = nh + 'px';
+  cl.style.left   = (cx - nw / 2) + 'px';
+  cl.style.top    = (cy - nh / 2) + 'px';
+  custState.w = nw; custState.h = nh;
+  custState.x = cx - nw / 2; custState.y = cy - nh / 2;
+}
+
 function uploadCust(e) {
   const f = e.target.files[0]; if (!f) return;
   const url = URL.createObjectURL(f);
-  document.getElementById('pcustImg').src = url;
   custVisible = true;
   document.getElementById('togCust').classList.add('on');
   const cl = document.getElementById('pcust');
-  cl.style.cssText = `display:'';width:${custState.w}px;height:${custState.h}px;top:${custState.y||10}px;left:${custState.x||S.fmtW/2-40}px`;
+  const startX = custState.x != null ? custState.x : S.fmtW / 2 - 40;
+  const startY = custState.y != null ? custState.y : 10;
+  cl.style.cssText = `display:block;width:${custState.w}px;height:${custState.h}px;top:${startY}px;left:${startX}px`;
+  const img = document.getElementById('pcustImg');
+  img.onload = fitCustLogo;
+  img.src = url;
+  if (img.complete && img.naturalWidth) fitCustLogo();
   makeDraggableSnap(cl, el => {
     custState.x = parseFloat(el.style.left); custState.y = parseFloat(el.style.top);
   });
@@ -1072,6 +1118,7 @@ function setFmt(el, w, h, key) {
   // Clear stored positions on format change so new layout defaults apply
   S.products.forEach(p => { p.imgX=null;p.imgY=null;p.imgW=null;p.imgH=null;p.kikX=null;p.kikY=null;p.namX=null;p.namY=null;p.namW=null; });
   S.fmtW = w; S.fmtH = h; S.fmtKey = key || 'a4p';
+  applyLayoutPreset();
   renderPoster(); buildTabs(); loadFields();
 }
 
@@ -1171,8 +1218,8 @@ function downloadPNG() {
     const nw = namEl ? parseFloat(namEl.style.width)*scale: (W - nx - W*.03);
 
     if (p.imageUrl) tasks.push(loadImg(p.imageUrl, img => ctx.drawImage(img,ix,iy,iw,ih)));
-    if (p.kicker)   tasks.push(Promise.resolve(drawKickerCanvas(ctx, p, kx, ky, W, H, scale)));
                     tasks.push(Promise.resolve(drawNameCanvas(ctx, p, nx, ny, nw, W, H, scale)));
+    if (p.kicker)   tasks.push(Promise.resolve(drawKickerCanvas(ctx, p, kx, ky, W, H, scale)));
   });
 
   if (vis.wm) {
@@ -1207,14 +1254,15 @@ function downloadPNG() {
     tasks.push(loadImg(cSrc, img => ctx.drawImage(img,cx,cy,cw,ch)));
   }
 
-  document.fonts.ready.then(() => {
-    Promise.all(tasks).then(() => {
-      const a = document.createElement('a');
-      a.download = 'family-chicken-poster.png';
-      a.href = cv.toDataURL('image/png');
-      a.click();
-      showToast('PNG gedownload ✓');
-    });
+  Promise.all([
+    document.fonts.load(`900 ${48*scale}px 'Barlow Condensed'`),
+    document.fonts.load(`700 ${48*scale}px 'Barlow Condensed'`),
+  ]).then(() => Promise.all(tasks)).then(() => {
+    const a = document.createElement('a');
+    a.download = 'family-chicken-poster.png';
+    a.href = cv.toDataURL('image/png');
+    a.click();
+    showToast('PNG gedownload ✓');
   });
 }
 
