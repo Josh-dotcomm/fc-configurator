@@ -180,7 +180,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
       <button class="slot-btn" onclick="changeCount(-1)">−</button>
       <div class="slot-num" id="slotNum">2</div>
       <button class="slot-btn" onclick="changeCount(1)">+</button>
-      <span style="font-size:11px;color:var(--muted)">max 6</span>
+      <span style="font-size:11px;color:var(--muted)">max 5</span>
     </div>
     <div class="slot-tabs" id="slotTabs"></div>
 
@@ -366,25 +366,34 @@ const LAYOUTS = {
   a4p: {
     1: [[18,21,64,45, 37,61, 32,65]],
     2: [[0,13.5,53.7,38.0, 56.6,24.1, 49.1,27.1], [41.7,50.0,55.0,38.9, 12.6,62.6, 4.5,65.7]],
-    3: [[3,4,52,28,  56,6,  56,14], [3,35,52,27, 56,37, 56,45], [3,66,52,26, 56,68, 56,76]],
-    4: [[2,3,46,22,  50,4,  50,11], [52,3,46,22,  3,4,   3,11],
-        [2,53,46,22, 50,54, 50,61], [52,53,46,22,  3,54,  3,61]],
-    5: [[2,3,46,18,   2,23,  2,31], [52,3,46,18,  52,23, 52,31],
-        [2,35,46,18,  2,55,  2,63], [52,35,46,18, 52,55, 52,63],
-        [10,68,55,20, 66,71, 66,79]],
-    6: [[2,2,46,17,   2,21,  2,29], [52,2,46,17,  52,21, 52,29],
-        [2,36,46,17,  2,55,  2,63], [52,36,46,17, 52,55, 52,63],
-        [2,70,46,17,  2,89,  2,89], [52,70,46,17, 52,89, 52,89]],
+    3: [[10.4,14.1,39.6,28.0, 55.2,20.7, 50.0,18.8],
+        [ 9.7,38.0,38.2,27.0, 54.2,43.5, 53.4,47.1],
+        [11.2,65.4,36.7,26.0, 56.0,70.2, 53.9,73.8]],
+    4: [[10.3,12.3,42.4,30.0, 18.7,36.8, 17.4,40.4],
+        [54.5,13.6,39.5,28.0, 65.4,37.7, 61.7,41.0],
+        [ 7.6,50.0,37.7,26.7, 65.0,74.9, 13.7,77.9],
+        [50.8,46.7,49.2,34.8, 18.8,74.7, 56.1,72.7]],
+    5: [[ 5.7,34.1,32.8,23.2, 39.9,20.6,  9.6,55.4],
+        [37.3, 5.6,25.4,18.0, 61.2,50.0, 37.4,24.3],
+        [57.5,34.4,25.4,18.0, 11.7,51.7, 60.7,53.9],
+        [53.7,60.9,36.2,25.6, 59.6,82.2, 55.0,80.9],
+        [ 8.6,63.2,31.7,22.4, 14.9,82.7, 13.6,85.9]],
   },
 };
 
-// Per-layout style presets: kickerSize, kickerRotation, nameSize per product slot
+// Per-layout style presets: kickerSize, kickerRotation, nameSize per slot
+// Single-entry arrays fall back to the last entry for all slots
 const LAYOUT_STYLE_PRESETS = {
-  'a4p-1': [{ kickerSize:14, kickerRotation:-3, nameSize:42 }],
-  'a4p-2': [
-    { kickerSize:13, kickerRotation:-3, nameSize:40 },
-    { kickerSize:13, kickerRotation:-5, nameSize:40 },
-  ],
+  'a4p-1': [{ kickerSize:14, kickerRotation:-3,  nameSize:42 }],
+  'a4p-2': [{ kickerSize:13, kickerRotation:-3,  nameSize:40 },
+            { kickerSize:13, kickerRotation:-5,  nameSize:40 }],
+  'a4p-3': [{ kickerSize:14, kickerRotation:-3,  nameSize:31 }],
+  'a4p-4': [{ kickerSize:14, kickerRotation:-3,  nameSize:31 }],
+  'a4p-5': [{ kickerSize:11, kickerRotation:-3,  nameSize:26 },
+            { kickerSize:11, kickerRotation:-3,  nameSize:27 },
+            { kickerSize:11, kickerRotation:-3,  nameSize:24 },
+            { kickerSize:12, kickerRotation:-3,  nameSize:27 },
+            { kickerSize:12, kickerRotation:-3,  nameSize:27 }],
 };
 
 function applyLayoutPreset() {
@@ -1071,7 +1080,7 @@ function setKicker(el) {
 }
 
 function changeCount(d) {
-  const n = Math.max(1, Math.min(6, S.count + d));
+  const n = Math.max(1, Math.min(5, S.count + d));
   if (n === S.count) return;
   S.count = n;
   if (S.active >= n) S.active = n - 1;
@@ -1343,7 +1352,7 @@ function saveConfig() {
     })),
     accent: S.accent, colorL: S.colorL, colorR: S.colorR,
     fmtW: S.fmtW, fmtH: S.fmtH, fmtKey: S.fmtKey,
-    zoom: S.zoom, vis: {...vis}, custVisible, custState,
+    zoom: S.zoom, vis: {...vis}, halalColor, custVisible, custState,
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
@@ -1369,6 +1378,7 @@ function loadConfig(e) {
       S.fmtKey  = d.fmtKey  || 'a4p';
       S.zoom    = d.zoom    || 1.0;
       if (d.vis) { vis.wm = d.vis.wm; vis.halal = d.vis.halal; }
+      if (d.halalColor) setHalalColor(d.halalColor);
       if (d.custState) custState = d.custState;
       document.getElementById('clrA').value = S.accent;
       document.getElementById('clrL').value = S.colorL;
@@ -1521,15 +1531,15 @@ function drawNameCanvas(ctx, p, x, y, nw, W, H, scale) {
 
 // ── RESET ─────────────────────────────────────────────────
 function resetAll() {
-  S = {count:2,active:0,products:[],accent:'#E8650A',colorL:'#7a2800',colorR:'#0d0604',fmtW:380,fmtH:537,fmtKey:'a4p',zoom:1.0};
+  S = {count:2,active:0,products:[],accent:'#E8650A',colorL:'#cf5e02',colorR:'#000000',fmtW:380,fmtH:537,fmtKey:'a4p',zoom:1.0};
   vis = {wm:true,halal:true};
-  halalColor = 'wit';
   custVisible = false;
   custState = {x:null,y:null,w:80,h:80};
   initProducts();
   document.getElementById('clrA').value = '#E8650A';
-  document.getElementById('clrL').value = '#7a2800';
-  document.getElementById('clrR').value = '#0d0604';
+  document.getElementById('clrL').value = '#cf5e02';
+  document.getElementById('clrR').value = '#000000';
+  setHalalColor('wit');
   document.getElementById('pcustImg').src = '';
   document.getElementById('pcust').style.display = 'none';
   document.getElementById('custThumb').classList.remove('show');
