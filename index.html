@@ -1304,7 +1304,7 @@ function applyColors() {
 function applyHalalColor() {
   const img = document.querySelector('#phalal img');
   if (!img) return;
-  img.style.filter = S.halalColor === 'zwart' ? 'brightness(0)' : '';
+  img.style.filter = S.halalColor === 'wit' ? 'invert(1)' : '';
 }
 function setHalalColor(color) {
   S.halalColor = color;
@@ -1470,7 +1470,7 @@ function downloadPNG() {
       const hw = W * HALAL_WIDTH;
       const hh = img.naturalHeight * (hw / img.naturalWidth);
       ctx.save();
-      ctx.filter = S.halalColor === 'zwart' ? 'brightness(0)' : 'none';
+      ctx.filter = S.halalColor === 'wit' ? 'invert(1)' : 'none';
       ctx.drawImage(img, W - W * HALAL_RIGHT - hw, H * HALAL_TOP, hw, hh);
       ctx.restore();
     }));
