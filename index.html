@@ -106,7 +106,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 .p-wm{position:absolute;pointer-events:none;z-index:22}
 .p-wm img{width:100%;height:100%;object-fit:contain;display:block}
 .p-halal{position:absolute;pointer-events:none;z-index:22}
-.p-halal img{width:100%;height:auto;display:block;mix-blend-mode:screen}
+.p-halal img{width:100%;height:auto;display:block}
 
 /* GEDEELDE ASSET STIJLEN */
 .asset-border{display:none;position:absolute;inset:-1px;border:1.5px solid rgba(232,101,10,.8);border-radius:3px;pointer-events:none;z-index:2}
@@ -1302,17 +1302,9 @@ function applyColors() {
 
 // ── HALAL ────────────────────────────────────────────────
 function applyHalalColor() {
-  const hal = document.getElementById('phalal');
   const img = document.querySelector('#phalal img');
-  if (!hal || !img) return;
-  if (S.halalColor === 'zwart') {
-    img.style.filter = 'brightness(0)';
-    img.style.mixBlendMode = 'normal';
-  } else {
-    img.style.filter = 'invert(1)';
-    img.style.mixBlendMode = '';
-  }
-  hal.style.mixBlendMode = '';
+  if (!img) return;
+  img.style.filter = S.halalColor === 'zwart' ? 'brightness(0)' : '';
 }
 function setHalalColor(color) {
   S.halalColor = color;
@@ -1478,7 +1470,7 @@ function downloadPNG() {
       const hw = W * HALAL_WIDTH;
       const hh = img.naturalHeight * (hw / img.naturalWidth);
       ctx.save();
-      ctx.filter = S.halalColor === 'zwart' ? 'brightness(0)' : 'brightness(0) invert(1)';
+      ctx.filter = S.halalColor === 'zwart' ? 'brightness(0)' : 'none';
       ctx.drawImage(img, W - W * HALAL_RIGHT - hw, H * HALAL_TOP, hw, hh);
       ctx.restore();
     }));
