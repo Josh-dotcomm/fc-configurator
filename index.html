@@ -106,7 +106,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 .p-wm{position:absolute;pointer-events:none;z-index:22}
 .p-wm img{width:100%;height:100%;object-fit:contain;display:block}
 .p-halal{position:absolute;pointer-events:none;z-index:22}
-.p-halal img{width:100%;height:auto;display:block}
+.p-halal img{width:100%;height:auto;display:block;mix-blend-mode:screen}
 
 /* GEDEELDE ASSET STIJLEN */
 .asset-border{display:none;position:absolute;inset:-1px;border:1.5px solid rgba(232,101,10,.8);border-radius:3px;pointer-events:none;z-index:2}
@@ -1307,11 +1307,12 @@ function applyHalalColor() {
   if (!hal || !img) return;
   if (S.halalColor === 'zwart') {
     img.style.filter = 'brightness(0)';
-    hal.style.mixBlendMode = 'multiply';
+    img.style.mixBlendMode = 'normal';
   } else {
     img.style.filter = 'invert(1)';
-    hal.style.mixBlendMode = 'screen';
+    img.style.mixBlendMode = '';
   }
+  hal.style.mixBlendMode = '';
 }
 function setHalalColor(color) {
   S.halalColor = color;
