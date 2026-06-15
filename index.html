@@ -1302,14 +1302,16 @@ function applyColors() {
 
 // ── HALAL ────────────────────────────────────────────────
 function applyHalalColor() {
+  const hal = document.getElementById('phalal');
   const img = document.querySelector('#phalal img');
-  if (!img) return;
+  if (!hal || !img) return;
   if (S.halalColor === 'zwart') {
     img.style.filter = 'brightness(0)';
+    hal.style.mixBlendMode = 'multiply';
   } else {
-    img.style.filter = 'brightness(0) invert(1)';
+    img.style.filter = 'invert(1)';
+    hal.style.mixBlendMode = 'screen';
   }
-  img.style.mixBlendMode = '';
 }
 function setHalalColor(color) {
   S.halalColor = color;
