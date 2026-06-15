@@ -69,7 +69,7 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 .lib-result-header .lib-name{flex:1}
 .lib-expand-btn{flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--muted);padding:0 2px;line-height:1;font-size:14px;transition:transform .2s}
 .lib-expand-btn.open{transform:rotate(180deg)}
-.lib-variants{display:none;padding:6px 8px 8px;border-top:1px solid var(--border);display:none;gap:6px;flex-wrap:wrap}
+.lib-variants{display:none;padding:6px 8px 8px;border-top:1px solid var(--border);gap:6px;flex-wrap:wrap}
 .lib-variants.open{display:flex}
 .lib-variant{width:52px;height:52px;border-radius:6px;border:2px solid var(--border);object-fit:contain;background:#f5f5f5;cursor:pointer;transition:border-color .15s;flex-shrink:0}
 .lib-variant:hover{border-color:var(--accent)}
@@ -338,10 +338,22 @@ header{background:var(--panel);border-bottom:1px solid var(--border);height:52px
 <div class="toast" id="toast"></div>
 
 <script>
-const BASE_URL   = 'https://cdn.jsdelivr.net/gh/Josh-dotcomm/fc-configurator@main/producten/';
-const ASSET_BASE = 'https://cdn.jsdelivr.net/gh/Josh-dotcomm/fc-configurator@main/assets/';
-const SNAP_PX    = 7; // snap threshold in logical pixels
+// ── RENDERING CONSTANTS ──────────────────────────────────
+const BASE_URL       = 'https://cdn.jsdelivr.net/gh/Josh-dotcomm/fc-configurator@main/producten/';
+const ASSET_BASE     = 'https://cdn.jsdelivr.net/gh/Josh-dotcomm/fc-configurator@main/assets/';
+const SNAP_PX        = 7;
+const WM_SIZE        = 0.28;
+const WM_ROTATION    = -18;
+const WM_OFFSET_CM   = 0.5;
+const HALAL_WIDTH    = 0.11;
+const HALAL_TOP      = 0.025;
+const HALAL_RIGHT    = 0.03;
+const PRICE_LIGHTEN  = 35;
+const CANVAS_SCALE   = 3;
+const KICKER_H_RATIO = 1.55;
+const NAME_LINE_H    = 0.95;
 
+// ── CONFIG DATA ──────────────────────────────────────────
 const LIBRARY = [
   {key:'20220', name:'Hotwings Crispy',              nameShort:'CHICKEN\nWINGS',       kicker:'CRISPY',      img:'20220-hotwings-crispy.png',
     variants:[
@@ -396,28 +408,46 @@ const LAYOUT_STYLE_PRESETS = {
             { kickerSize:12, kickerRotation:-3,  nameSize:27 }],
 };
 
+// ── DEFAULTS ─────────────────────────────────────────────
+const DEFAULTS = {
+  count: 2, active: 0,
+  accent: '#E8650A', colorL: '#cf5e02', colorR: '#000000',
+  fmtW: 380, fmtH: 537, fmtKey: 'a4p', zoom: 1.0,
+  vis: { wm: true, halal: true },
+  halalColor: 'wit',
+  custVisible: false,
+  custState: { x: null, y: null, w: 80, h: 80 },
+};
+
 function applyLayoutPreset() {
   const key = S.fmtKey + '-' + S.count;
   const preset = LAYOUT_STYLE_PRESETS[key];
   if (!preset) return;
   S.products.slice(0, S.count).forEach((p, i) => {
     const pr = preset[i] || preset[preset.length - 1];
-    if (pr.kickerSize    !== undefined) p.kickerSize    = pr.kickerSize;
+    if (pr.kickerSize     !== undefined) p.kickerSize     = pr.kickerSize;
     if (pr.kickerRotation !== undefined) p.kickerRotation = pr.kickerRotation;
-    if (pr.nameSize      !== undefined) p.nameSize      = pr.nameSize;
+    if (pr.nameSize       !== undefined) p.nameSize       = pr.nameSize;
   });
 }
 
-// ── STATE ──────────────────────────────────────────────────
-let S = {
-  count:2, active:0, products:[],
-  accent:'#E8650A', colorL:'#cf5e02', colorR:'#000000',
-  fmtW:380, fmtH:537, fmtKey:'a4p',
-  zoom:1.0,
-};
-let vis = {wm:true, halal:true};
-let halalColor = 'wit'; // 'wit' = white (screen blend), 'zwart' = black
-// ── MARQUEE SELECTION ─────────────────────────────────────
+// ── STATE ────────────────────────────────────────────────
+function buildDefaultState() {
+  return {
+    count: DEFAULTS.count, active: DEFAULTS.active, products: [],
+    accent: DEFAULTS.accent, colorL: DEFAULTS.colorL, colorR: DEFAULTS.colorR,
+    fmtW: DEFAULTS.fmtW, fmtH: DEFAULTS.fmtH, fmtKey: DEFAULTS.fmtKey,
+    zoom: DEFAULTS.zoom,
+    vis: { ...DEFAULTS.vis },
+    halalColor: DEFAULTS.halalColor,
+    custVisible: DEFAULTS.custVisible,
+    custState: { ...DEFAULTS.custState },
+  };
+}
+
+let S = buildDefaultState();
+
+// ── MARQUEE SELECTION ────────────────────────────────────
 let selectedEls = [];
 
 function clearSelection() {
@@ -527,9 +557,7 @@ function startMarquee(e) {
   document.addEventListener('mousemove', onMove);
   document.addEventListener('mouseup', onUp);
 }
-let custVisible = false;
-// Customer logo position stored separately (not per-product)
-let custState = {x:null,y:null,w:80,h:80};
+let libOpenKey = null;
 
 function initProducts() {
   S.products = LIBRARY.map(l => ({
@@ -558,13 +586,13 @@ function initProducts() {
 function init() {
   initProducts();
   applyLayoutPreset();
-  renderPoster();
-  buildTabs();
-  loadFields();
+  update();
   filterLib();
-  // Marquee selection on poster background drag
   document.getElementById('poster').addEventListener('mousedown', startMarquee);
 }
+
+// ── UPDATE ───────────────────────────────────────────────
+function update() { renderPoster(); buildTabs(); loadFields(); }
 
 // ── TABS ──────────────────────────────────────────────────
 function buildTabs() {
@@ -582,7 +610,6 @@ function buildTabs() {
   document.getElementById('slotNum').textContent = S.count;
 }
 
-// ── HELPERS ───────────────────────────────────────────────
 function scaledFS(base, W, H) {
   return base * Math.max(H, W * 0.6) / 537;
 }
@@ -609,8 +636,14 @@ function getLayout(count) {
   return fl[count] || fl[2];
 }
 
+// ── HELPERS ───────────────────────────────────────────────
+function clearContent(el) {
+  Array.from(el.children).forEach(c => {
+    if (!c.classList.contains('asset-border') && !c.classList.contains('rh')) c.remove();
+  });
+}
+
 // ── SNAP GUIDES ───────────────────────────────────────────
-const GUIDE_LINES = { h:[], v:[] }; // active guide positions
 function computeSnap(x, y, elW, elH, W, H) {
   const hTargets = [0, H/2, H];
   const vTargets = [0, W/2, W];
@@ -749,55 +782,58 @@ function addHandles(el) {
   });
 }
 
-// Shrink/grow the img-container so it fits the image's natural aspect ratio exactly
-function fitImgToSlot(container, img, idx) {
+// ── FIT TO ASPECT ────────────────────────────────────────
+function fitToAspect(container, img, onFit) {
   if (!img.naturalWidth || !img.naturalHeight) return;
   const w0 = parseFloat(container.style.width);
   const h0 = parseFloat(container.style.height);
   if (!w0 || !h0) return;
   const ratio = img.naturalWidth / img.naturalHeight;
-  const contRatio = w0 / h0;
   let nw, nh;
-  if (ratio > contRatio) { nw = w0; nh = w0 / ratio; }
-  else                   { nh = h0; nw = h0 * ratio; }
+  if (ratio > w0 / h0) { nw = w0; nh = w0 / ratio; }
+  else                  { nh = h0; nw = h0 * ratio; }
   const cx = parseFloat(container.style.left) + w0 / 2;
   const cy = parseFloat(container.style.top)  + h0 / 2;
   container.style.width  = nw + 'px';
   container.style.height = nh + 'px';
   container.style.left   = (cx - nw / 2) + 'px';
   container.style.top    = (cy - nh / 2) + 'px';
-  if (idx !== undefined) {
-    const p = S.products[idx];
-    if (p) { p.imgW = nw; p.imgH = nh; p.imgX = cx - nw/2; p.imgY = cy - nh/2; }
-  }
+  if (onFit) onFit(nw, nh, cx - nw / 2, cy - nh / 2);
+}
+function fitCustLogo() {
+  const cl  = document.getElementById('pcust');
+  const img = document.getElementById('pcustImg');
+  fitToAspect(cl, img, (nw, nh, nx, ny) => {
+    S.custState.w = nw; S.custState.h = nh;
+    S.custState.x = nx; S.custState.y = ny;
+  });
 }
 
-// ── RENDER POSTER ─────────────────────────────────────────
-function renderPoster() {
+// ── RENDER ───────────────────────────────────────────────
+function renderBackground() {
   const W = S.fmtW, H = S.fmtH;
   const poster = document.getElementById('poster');
   poster.style.width  = W + 'px';
   poster.style.height = H + 'px';
 
-  // Background
   document.getElementById('posterBg').style.background =
     `linear-gradient(120deg,${S.colorL} 0%,${blend(S.colorL,S.colorR,.5)} 45%,${S.colorR} 100%)`;
   document.getElementById('posterGlow').style.background =
     `radial-gradient(ellipse at 22% 68%,${hexA(S.colorL,.32)} 0%,transparent 58%)`;
 
-  // Watermark — verschoven: 0,5 cm links en 0,5 cm omlaag (A4 = 21×29,7 cm)
   const wm = document.getElementById('pwm');
-  const wmS = W * .28;
-  const wmShiftX = W * (0.5 / 21);
-  const wmShiftY = H * (0.5 / 29.7);
-  wm.style.cssText = `width:${wmS}px;height:${wmS}px;top:${(-wmS*.18 + wmShiftY).toFixed(1)}px;left:${(-wmS*.18 - wmShiftX).toFixed(1)}px;transform:rotate(-18deg);transform-origin:top left;opacity:.24;display:${vis.wm?'':'none'}`;
+  const wmS = W * WM_SIZE;
+  const wmShiftX = W * (WM_OFFSET_CM / 21);
+  const wmShiftY = H * (WM_OFFSET_CM / 29.7);
+  wm.style.cssText = `width:${wmS}px;height:${wmS}px;top:${(-wmS*.18 + wmShiftY).toFixed(1)}px;left:${(-wmS*.18 - wmShiftX).toFixed(1)}px;transform:rotate(${WM_ROTATION}deg);transform-origin:top left;opacity:.24;display:${S.vis.wm?'':'none'}`;
 
-  // Halal — alleen breedte vastzetten, hoogte volgt aspect-ratio van afbeelding
   const hal = document.getElementById('phalal');
-  hal.style.cssText = `width:${W*.11}px;top:${H*.025}px;right:${W*.03}px;display:${vis.halal?'':'none'}`;
+  hal.style.cssText = `width:${W*HALAL_WIDTH}px;top:${H*HALAL_TOP}px;right:${W*HALAL_RIGHT}px;display:${S.vis.halal?'':'none'}`;
   applyHalalColor();
+}
 
-  // Rebuild product slots
+function renderSlots() {
+  const W = S.fmtW, H = S.fmtH;
   clearSelection();
   const container = document.getElementById('pslots');
   container.innerHTML = '';
@@ -806,7 +842,6 @@ function renderPoster() {
   for (let i = 0; i < S.count; i++) {
     const p = S.products[i];
     const L = layout[i];
-    // Use stored position or layout default
     const ix = p.imgX !== null ? p.imgX : L[0]/100*W;
     const iy = p.imgY !== null ? p.imgY : L[1]/100*H;
     const iw = p.imgW !== null ? p.imgW : L[2]/100*W;
@@ -815,7 +850,7 @@ function renderPoster() {
     const ky = p.kikY !== null ? p.kikY : L[5]/100*H;
     const nx = p.namX !== null ? p.namX : L[6]/100*W;
     const ny = p.namY !== null ? p.namY : L[7]/100*H;
-    const nw = p.namW !== null ? p.namW : (W - nx - W*.03);
+    const nw = p.namW !== null ? p.namW : (W - nx - W*HALAL_RIGHT);
     const isActive = i === S.active;
 
     // — IMAGE SLOT —
@@ -827,7 +862,7 @@ function renderPoster() {
       const img = document.createElement('img');
       imgEl.appendChild(img);
       if (p.imgW === null) {
-        const _fit = () => fitImgToSlot(imgEl, img, i);
+        const _fit = () => fitToAspect(imgEl, img, (nw,nh,nx,ny) => { p.imgW=nw; p.imgH=nh; p.imgX=nx; p.imgY=ny; });
         img.onload = _fit;
         img.src = p.imageUrl;
         if (img.complete && img.naturalWidth) _fit();
@@ -880,14 +915,12 @@ function renderPoster() {
         const p = S.products[parseInt(el.dataset.idx)];
         p.kikX = parseFloat(el.style.left); p.kikY = parseFloat(el.style.top);
       });
-      // Kicker resize = font size change (scale handles change the inline font)
       makeCornerResizable(kikEl, el => {
         const idx = parseInt(el.dataset.idx);
         const p = S.products[idx];
         p.kikX = parseFloat(el.style.left); p.kikY = parseFloat(el.style.top);
-        // Derive new font size from element height
-        const newH = parseFloat(el.style.height) || kfs * 1.6;
-        p.kickerSize = Math.max(6, Math.round(newH / 1.6));
+        const newH = parseFloat(el.style.height) || kfs * KICKER_H_RATIO;
+        p.kickerSize = Math.max(6, Math.round(newH / KICKER_H_RATIO));
         refreshKicker(idx);
       });
       container.appendChild(kikEl);
@@ -898,7 +931,7 @@ function renderPoster() {
     namEl.className = 'p-name-asset' + (isActive ? ' active-slot' : '');
     namEl.dataset.idx = String(i);
     const nfs = scaledFS(p.nameSize || 28, W, H);
-    const pclr = p.priceColor || lighten(S.accent, 35);
+    const pclr = p.priceColor || lighten(S.accent, PRICE_LIGHTEN);
     const pfs  = scaledFS(15, W, H);
     namEl.style.cssText = `left:${nx}px;top:${ny}px;width:${nw}px;z-index:${10+i}`;
     let nhtml = `<div class="p-name" style="font-size:${nfs}px;color:${p.nameColor}">${p.name.replace(/\n/g,'<br>')}</div>`;
@@ -926,20 +959,22 @@ function renderPoster() {
   }
 
   // Customer logo: reinit drag/resize
-  if (custVisible && document.getElementById('pcustImg').src) {
+  if (S.custVisible && document.getElementById('pcustImg').src) {
     const cl = document.getElementById('pcust');
     makeDraggableSnap(cl, el => {
-      custState.x = parseFloat(el.style.left);
-      custState.y = parseFloat(el.style.top);
+      S.custState.x = parseFloat(el.style.left);
+      S.custState.y = parseFloat(el.style.top);
     });
     makeCornerResizable(cl, el => {
-      custState.x = parseFloat(el.style.left); custState.y = parseFloat(el.style.top);
-      custState.w = parseFloat(el.style.width); custState.h = parseFloat(el.style.height);
+      S.custState.x = parseFloat(el.style.left); S.custState.y = parseFloat(el.style.top);
+      S.custState.w = parseFloat(el.style.width); S.custState.h = parseFloat(el.style.height);
     });
   }
 }
 
-// ── REFRESH HELPERS (partial update) ─────────────────────
+function renderPoster() { renderBackground(); renderSlots(); }
+
+// ── REFRESH HELPERS ──────────────────────────────────────
 function refreshKicker(idx) {
   const el = document.querySelector(`.p-kicker-asset[data-idx="${idx}"]`);
   if (!el) return;
@@ -949,10 +984,10 @@ function refreshKicker(idx) {
   el.style.transform = `rotate(${p.kickerRotation ?? -10}deg)`;
   const kicker = el.querySelector('.p-kicker');
   if (kicker) {
-    kicker.style.background  = kbg;
-    kicker.style.color       = p.kickerColor;
-    kicker.style.fontSize    = kfs + 'px';
-    kicker.textContent       = p.kicker;
+    kicker.style.background = kbg;
+    kicker.style.color      = p.kickerColor;
+    kicker.style.fontSize   = kfs + 'px';
+    kicker.textContent      = p.kicker;
   }
 }
 function refreshName(idx) {
@@ -960,12 +995,9 @@ function refreshName(idx) {
   if (!el) return;
   const p = S.products[idx];
   const nfs  = scaledFS(p.nameSize || 28, S.fmtW, S.fmtH);
-  const pclr = p.priceColor || lighten(S.accent, 35);
+  const pclr = p.priceColor || lighten(S.accent, PRICE_LIGHTEN);
   const pfs  = scaledFS(15, S.fmtW, S.fmtH);
-  // Rebuild content but keep border+handles
-  Array.from(el.children).forEach(c => {
-    if (!c.classList.contains('asset-border') && !c.classList.contains('rh')) c.remove();
-  });
+  clearContent(el);
   const tmp = document.createElement('div');
   tmp.innerHTML = `<div class="p-name" style="font-size:${nfs}px;color:${p.nameColor}">${p.name.replace(/\n/g,'<br>')}</div>`;
   if (p.price && p.showPrice !== false) tmp.innerHTML += `<div class="p-price" style="font-size:${pfs}px;color:${pclr}">${p.price}</div>`;
@@ -975,13 +1007,11 @@ function refreshImage(idx) {
   const el = document.querySelector(`.p-asset[data-idx="${idx}"]`);
   if (!el) return;
   const p = S.products[idx];
-  Array.from(el.children).forEach(c => {
-    if (!c.classList.contains('asset-border') && !c.classList.contains('rh')) c.remove();
-  });
+  clearContent(el);
   if (p.imageUrl) {
     const img = document.createElement('img');
-    p.imgW = null; p.imgH = null; // reset so fit runs again for the new image
-    const _fit = () => fitImgToSlot(el, img, idx);
+    p.imgW = null; p.imgH = null;
+    const _fit = () => fitToAspect(el, img, (nw,nh,nx,ny) => { p.imgW=nw; p.imgH=nh; p.imgX=nx; p.imgY=ny; });
     img.onload = _fit;
     el.insertBefore(img, el.querySelector('.asset-border'));
     img.src = p.imageUrl;
@@ -1022,7 +1052,7 @@ function loadFields() {
   document.getElementById('fldNamSz').value  = p.nameSize || 28;
   document.getElementById('namSzV').textContent = p.nameSize || 28;
 
-  document.getElementById('fldPrjClr').value = p.priceColor || lighten(S.accent, 35);
+  document.getElementById('fldPrjClr').value = p.priceColor || lighten(S.accent, PRICE_LIGHTEN);
   document.getElementById('togPrice').classList.toggle('on', p.showPrice !== false);
 
   // Thumbnail
@@ -1050,7 +1080,7 @@ function syncStyle() {
   const p = S.products[S.active];
   if (!p) return;
   p.kickerColor    = document.getElementById('fldKikClr').value;
-  p.kickerSize     = parseInt(document.getElementById('fldKikSz').value) || 10;
+  p.kickerSize     = parseInt(document.getElementById('fldKikSz').value) || 14;
   p.kickerRotation = parseInt(document.getElementById('fldKikRot').value);
   p.nameColor      = document.getElementById('fldNamClr').value;
   p.nameSize       = parseInt(document.getElementById('fldNamSz').value) || 28;
@@ -1075,8 +1105,7 @@ function setKicker(el) {
   el.classList.add('on');
   const p = S.products[S.active];
   p.kicker = el.dataset.val;
-  // Kicker element toggling requires full re-render of slots (add/remove element)
-  renderPoster(); buildTabs(); loadFields();
+  update();
 }
 
 function changeCount(d) {
@@ -1086,11 +1115,10 @@ function changeCount(d) {
   if (S.active >= n) S.active = n - 1;
   S.products.forEach(p => { p.imgX=null;p.imgY=null;p.imgW=null;p.imgH=null;p.kikX=null;p.kikY=null;p.namX=null;p.namY=null;p.namW=null; });
   applyLayoutPreset();
-  renderPoster(); buildTabs(); loadFields();
+  update();
 }
 
 // ── LIBRARY ───────────────────────────────────────────────
-let libOpenKey = null; // tracks which accordion is open
 
 function filterLib() {
   const q = document.getElementById('libSearch').value.toLowerCase().trim();
@@ -1165,7 +1193,7 @@ function pickLib(key) {
   );
   refreshImage(S.active);
   refreshName(S.active);
-  renderPoster(); buildTabs(); loadFields();
+  update();
   filterLib();
 }
 
@@ -1184,11 +1212,11 @@ function pickLibVariant(key, variant) {
   );
   refreshImage(S.active);
   refreshName(S.active);
-  renderPoster(); buildTabs(); loadFields();
+  update();
   filterLib();
 }
 
-// ── UPLOAD PRODUCT ────────────────────────────────────────
+// ── PRODUCT UPLOAD ───────────────────────────────────────
 function uploadProd(e) {
   const f = e.target.files[0]; if (!f) return;
   S.products[S.active].imageUrl = URL.createObjectURL(f);
@@ -1206,51 +1234,31 @@ function removeProd() {
 
 // ── KLANTLOGO ─────────────────────────────────────────────
 function toggleCust() {
-  custVisible = !custVisible;
-  document.getElementById('togCust').classList.toggle('on', custVisible);
+  S.custVisible = !S.custVisible;
+  document.getElementById('togCust').classList.toggle('on', S.custVisible);
   const cl = document.getElementById('pcust');
-  cl.style.display = custVisible && document.getElementById('pcustImg').src ? '' : 'none';
-}
-function fitCustLogo() {
-  const cl = document.getElementById('pcust');
-  const img = document.getElementById('pcustImg');
-  if (!img.naturalWidth || !img.naturalHeight) return;
-  const w0 = parseFloat(cl.style.width)  || custState.w;
-  const h0 = parseFloat(cl.style.height) || custState.h;
-  const ratio = img.naturalWidth / img.naturalHeight;
-  const contRatio = w0 / h0;
-  let nw, nh;
-  if (ratio > contRatio) { nw = w0; nh = w0 / ratio; }
-  else                   { nh = h0; nw = h0 * ratio; }
-  const cx = parseFloat(cl.style.left) + w0 / 2;
-  const cy = parseFloat(cl.style.top)  + h0 / 2;
-  cl.style.width  = nw + 'px';
-  cl.style.height = nh + 'px';
-  cl.style.left   = (cx - nw / 2) + 'px';
-  cl.style.top    = (cy - nh / 2) + 'px';
-  custState.w = nw; custState.h = nh;
-  custState.x = cx - nw / 2; custState.y = cy - nh / 2;
+  cl.style.display = S.custVisible && document.getElementById('pcustImg').src ? '' : 'none';
 }
 
 function uploadCust(e) {
   const f = e.target.files[0]; if (!f) return;
   const url = URL.createObjectURL(f);
-  custVisible = true;
+  S.custVisible = true;
   document.getElementById('togCust').classList.add('on');
   const cl = document.getElementById('pcust');
-  const startX = custState.x != null ? custState.x : S.fmtW / 2 - 40;
-  const startY = custState.y != null ? custState.y : 10;
-  cl.style.cssText = `display:block;width:${custState.w}px;height:${custState.h}px;top:${startY}px;left:${startX}px`;
+  const startX = S.custState.x != null ? S.custState.x : S.fmtW / 2 - 40;
+  const startY = S.custState.y != null ? S.custState.y : 10;
+  cl.style.cssText = `display:block;width:${S.custState.w}px;height:${S.custState.h}px;top:${startY}px;left:${startX}px`;
   const img = document.getElementById('pcustImg');
   img.onload = fitCustLogo;
   img.src = url;
   if (img.complete && img.naturalWidth) fitCustLogo();
   makeDraggableSnap(cl, el => {
-    custState.x = parseFloat(el.style.left); custState.y = parseFloat(el.style.top);
+    S.custState.x = parseFloat(el.style.left); S.custState.y = parseFloat(el.style.top);
   });
   makeCornerResizable(cl, el => {
-    custState.x = parseFloat(el.style.left); custState.y = parseFloat(el.style.top);
-    custState.w = parseFloat(el.style.width); custState.h = parseFloat(el.style.height);
+    S.custState.x = parseFloat(el.style.left); S.custState.y = parseFloat(el.style.top);
+    S.custState.w = parseFloat(el.style.width); S.custState.h = parseFloat(el.style.height);
   });
   const thumb = document.getElementById('custThumb');
   thumb.src = url; thumb.classList.add('show');
@@ -1262,27 +1270,24 @@ function removeCust() {
   document.getElementById('pcust').style.display = 'none';
   document.getElementById('custThumb').classList.remove('show');
   document.getElementById('custRem').classList.remove('show');
-  custVisible = false;
+  S.custVisible = false;
   document.getElementById('togCust').classList.remove('on');
-  custState = {x:null,y:null,w:80,h:80};
+  S.custState = { x:null, y:null, w:80, h:80 };
 }
 
-// ── VIS TOGGLES ───────────────────────────────────────────
+// ── VISIBILITY ───────────────────────────────────────────
 function toggleVis(key) {
-  vis[key] = !vis[key];
-  document.getElementById(key==='wm'?'togWm':'togHalal').classList.toggle('on', vis[key]);
-  document.getElementById(key==='wm'?'pwm':'phalal').style.display = vis[key] ? '' : 'none';
+  S.vis[key] = !S.vis[key];
+  document.getElementById(key==='wm'?'togWm':'togHalal').classList.toggle('on', S.vis[key]);
+  renderBackground();
 }
 
-// ── COLORS ────────────────────────────────────────────────
+// ── COLORS ───────────────────────────────────────────────
 function applyColors() {
-  S.accent  = document.getElementById('clrA').value;
-  S.colorL  = document.getElementById('clrL').value;
-  S.colorR  = document.getElementById('clrR').value;
-  document.getElementById('posterBg').style.background =
-    `linear-gradient(120deg,${S.colorL} 0%,${blend(S.colorL,S.colorR,.5)} 45%,${S.colorR} 100%)`;
-  document.getElementById('posterGlow').style.background =
-    `radial-gradient(ellipse at 22% 68%,${hexA(S.colorL,.32)} 0%,transparent 58%)`;
+  S.accent = document.getElementById('clrA').value;
+  S.colorL = document.getElementById('clrL').value;
+  S.colorR = document.getElementById('clrR').value;
+  renderBackground();
   document.querySelectorAll('.p-kicker').forEach(k => {
     const idx = parseInt(k.closest('[data-idx]').dataset.idx);
     const p = S.products[idx];
@@ -1291,25 +1296,24 @@ function applyColors() {
   document.querySelectorAll('.p-price').forEach(pr => {
     const idx = parseInt(pr.closest('[data-idx]').dataset.idx);
     const p = S.products[idx];
-    if (!p.priceColor) pr.style.color = lighten(S.accent, 35);
+    if (!p.priceColor) pr.style.color = lighten(S.accent, PRICE_LIGHTEN);
   });
 }
 
-// ── HALAL KLEUR ───────────────────────────────────────────
+// ── HALAL ────────────────────────────────────────────────
 function applyHalalColor() {
   const img = document.querySelector('#phalal img');
   if (!img) return;
-  if (halalColor === 'zwart') {
+  if (S.halalColor === 'zwart') {
     img.style.filter = 'brightness(0)';
     img.style.mixBlendMode = 'normal';
   } else {
-    // Invert the dark logo so it becomes white; screen blend makes it glow on dark bg
     img.style.filter = 'invert(1)';
-    img.style.mixBlendMode = '';
+    img.style.mixBlendMode = 'screen';
   }
 }
 function setHalalColor(color) {
-  halalColor = color;
+  S.halalColor = color;
   document.getElementById('halalWit').classList.toggle('on', color === 'wit');
   document.getElementById('halalZwart').classList.toggle('on', color === 'zwart');
   applyHalalColor();
@@ -1332,7 +1336,7 @@ function setFmt(el, w, h, key) {
   S.products.forEach(p => { p.imgX=null;p.imgY=null;p.imgW=null;p.imgH=null;p.kikX=null;p.kikY=null;p.namX=null;p.namY=null;p.namW=null; });
   S.fmtW = w; S.fmtH = h; S.fmtKey = key || 'a4p';
   applyLayoutPreset();
-  renderPoster(); buildTabs(); loadFields();
+  update();
 }
 
 // ── ZOOM ──────────────────────────────────────────────────
@@ -1352,7 +1356,11 @@ function saveConfig() {
     })),
     accent: S.accent, colorL: S.colorL, colorR: S.colorR,
     fmtW: S.fmtW, fmtH: S.fmtH, fmtKey: S.fmtKey,
-    zoom: S.zoom, vis: {...vis}, halalColor, custVisible, custState,
+    zoom: S.zoom,
+    vis: { ...S.vis },
+    halalColor: S.halalColor,
+    custVisible: S.custVisible,
+    custState: { ...S.custState },
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
@@ -1367,25 +1375,37 @@ function loadConfig(e) {
   r.onload = ev => {
     try {
       const d = JSON.parse(ev.target.result);
-      S.count   = d.count   || 2;
-      S.active  = d.active  || 0;
-      S.products= d.products|| S.products;
-      S.accent  = d.accent  || S.accent;
-      S.colorL  = d.colorL  || S.colorL;
-      S.colorR  = d.colorR  || S.colorR;
-      S.fmtW    = d.fmtW    || 380;
-      S.fmtH    = d.fmtH    || 537;
-      S.fmtKey  = d.fmtKey  || 'a4p';
-      S.zoom    = d.zoom    || 1.0;
-      if (d.vis) { vis.wm = d.vis.wm; vis.halal = d.vis.halal; }
+      S.count    = d.count    || DEFAULTS.count;
+      S.active   = d.active   || DEFAULTS.active;
+      S.products = d.products || S.products;
+      S.accent   = d.accent   || DEFAULTS.accent;
+      S.colorL   = d.colorL   || DEFAULTS.colorL;
+      S.colorR   = d.colorR   || DEFAULTS.colorR;
+      S.fmtW     = d.fmtW     || DEFAULTS.fmtW;
+      S.fmtH     = d.fmtH     || DEFAULTS.fmtH;
+      S.fmtKey   = d.fmtKey   || DEFAULTS.fmtKey;
+      S.zoom     = d.zoom     || DEFAULTS.zoom;
+      if (d.vis) {
+        S.vis.wm    = d.vis.wm;
+        S.vis.halal = d.vis.halal;
+        document.getElementById('togWm').classList.toggle('on', S.vis.wm);
+        document.getElementById('togHalal').classList.toggle('on', S.vis.halal);
+      }
       if (d.halalColor) setHalalColor(d.halalColor);
-      if (d.custState) custState = d.custState;
+      if (d.custState) S.custState = d.custState;
+      if (d.custVisible !== undefined) {
+        S.custVisible = d.custVisible;
+        document.getElementById('togCust').classList.toggle('on', S.custVisible);
+        if (S.custVisible && document.getElementById('pcustImg').src) {
+          document.getElementById('pcust').style.display = 'block';
+        }
+      }
       document.getElementById('clrA').value = S.accent;
       document.getElementById('clrL').value = S.colorL;
       document.getElementById('clrR').value = S.colorR;
       document.getElementById('poster').style.transform = `scale(${S.zoom})`;
-      document.getElementById('zoomVal').textContent = Math.round(S.zoom*100)+'%';
-      renderPoster(); buildTabs(); loadFields(); filterLib();
+      document.getElementById('zoomVal').textContent = Math.round(S.zoom * 100) + '%';
+      update(); filterLib();
       showToast('Geladen ✓');
     } catch(err) { showToast('Fout bij laden'); }
   };
@@ -1393,84 +1413,87 @@ function loadConfig(e) {
   e.target.value = '';
 }
 
-// ── DOWNLOAD PNG ──────────────────────────────────────────
+// ── DOWNLOAD PNG ─────────────────────────────────────────
+function getSlotPositions(i) {
+  const W = S.fmtW, H = S.fmtH;
+  const L = getLayout(S.count)[i];
+  const imgEl = document.querySelector(`.p-asset[data-idx="${i}"]`);
+  const kikEl = document.querySelector(`.p-kicker-asset[data-idx="${i}"]`);
+  const namEl = document.querySelector(`.p-name-asset[data-idx="${i}"]`);
+  const ix = imgEl ? parseFloat(imgEl.style.left)   : L[0]/100*W;
+  const iy = imgEl ? parseFloat(imgEl.style.top)    : L[1]/100*H;
+  const iw = imgEl ? parseFloat(imgEl.style.width)  : L[2]/100*W;
+  const ih = imgEl ? parseFloat(imgEl.style.height) : L[3]/100*H;
+  const kx = kikEl ? parseFloat(kikEl.style.left)   : L[4]/100*W;
+  const ky = kikEl ? parseFloat(kikEl.style.top)    : L[5]/100*H;
+  const nx = namEl ? parseFloat(namEl.style.left)   : L[6]/100*W;
+  const ny = namEl ? parseFloat(namEl.style.top)    : L[7]/100*H;
+  const nw = namEl ? parseFloat(namEl.style.width)  : (W - nx - W * HALAL_RIGHT);
+  return { ix, iy, iw, ih, kx, ky, nx, ny, nw };
+}
+
 function downloadPNG() {
-  const scale = 3;
-  const W = S.fmtW * scale, H = S.fmtH * scale;
+  const sc = CANVAS_SCALE;
+  const W = S.fmtW * sc, H = S.fmtH * sc;
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
 
-  const g = ctx.createLinearGradient(0,0,W*.85,H);
+  const g = ctx.createLinearGradient(0, 0, W*.85, H);
   g.addColorStop(0, S.colorL);
-  g.addColorStop(.45, blend(S.colorL,S.colorR,.5));
+  g.addColorStop(.45, blend(S.colorL, S.colorR, .5));
   g.addColorStop(1, S.colorR);
-  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 
-  const glow = ctx.createRadialGradient(W*.22,H*.68,0,W*.22,H*.68,W*.7);
-  glow.addColorStop(0, hexA(S.colorL,.32));
-  glow.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle = glow; ctx.fillRect(0,0,W,H);
+  const glow = ctx.createRadialGradient(W*.22, H*.68, 0, W*.22, H*.68, W*.7);
+  glow.addColorStop(0, hexA(S.colorL, .32));
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
 
   const tasks = [];
-  const layout = getLayout(S.count);
 
   S.products.slice(0, S.count).forEach((p, i) => {
-    const L = layout[i];
-    const imgEl  = document.querySelector(`.p-asset[data-idx="${i}"]`);
-    const kikEl  = document.querySelector(`.p-kicker-asset[data-idx="${i}"]`);
-    const namEl  = document.querySelector(`.p-name-asset[data-idx="${i}"]`);
-
-    const ix = imgEl ? parseFloat(imgEl.style.left)*scale : L[0]/100*W;
-    const iy = imgEl ? parseFloat(imgEl.style.top)*scale  : L[1]/100*H;
-    const iw = imgEl ? parseFloat(imgEl.style.width)*scale: L[2]/100*W;
-    const ih = imgEl ? parseFloat(imgEl.style.height)*scale:L[3]/100*H;
-    const kx = kikEl ? parseFloat(kikEl.style.left)*scale : L[4]/100*W;
-    const ky = kikEl ? parseFloat(kikEl.style.top)*scale  : L[5]/100*H;
-    const nx = namEl ? parseFloat(namEl.style.left)*scale : L[6]/100*W;
-    const ny = namEl ? parseFloat(namEl.style.top)*scale  : L[7]/100*H;
-    const nw = namEl ? parseFloat(namEl.style.width)*scale: (W - nx - W*.03);
-
-    if (p.imageUrl) tasks.push(loadImg(p.imageUrl, img => ctx.drawImage(img,ix,iy,iw,ih)));
-                    tasks.push(Promise.resolve(drawNameCanvas(ctx, p, nx, ny, nw, W, H, scale)));
-    if (p.kicker)   tasks.push(Promise.resolve(drawKickerCanvas(ctx, p, kx, ky, W, H, scale)));
+    const { ix, iy, iw, ih, kx, ky, nx, ny, nw } = getSlotPositions(i);
+    if (p.imageUrl) tasks.push(loadImg(p.imageUrl, img => ctx.drawImage(img, ix*sc, iy*sc, iw*sc, ih*sc)));
+                    tasks.push(Promise.resolve(drawNameCanvas(ctx, p, nx*sc, ny*sc, nw*sc, W, H, sc)));
+    if (p.kicker)   tasks.push(Promise.resolve(drawKickerCanvas(ctx, p, kx*sc, ky*sc, W, H, sc)));
   });
 
-  if (vis.wm) {
-    const wmS = W*.28;
-    const wmSX = W * (0.5 / 21);
-    const wmSY = H * (0.5 / 29.7);
-    tasks.push(loadImg(ASSET_BASE+'fc-logo.png', img => {
+  if (S.vis.wm) {
+    const wmS  = W * WM_SIZE;
+    const wmSX = W * (WM_OFFSET_CM / 21);
+    const wmSY = H * (WM_OFFSET_CM / 29.7);
+    tasks.push(loadImg(ASSET_BASE + 'fc-logo.png', img => {
       ctx.save(); ctx.globalAlpha = .24;
-      ctx.translate(-wmS*.18 - wmSX, -wmS*.18 + wmSY);
-      ctx.rotate(-18*Math.PI/180);
-      ctx.drawImage(img,0,0,wmS,wmS);
+      ctx.translate(-wmS * .18 - wmSX, -wmS * .18 + wmSY);
+      ctx.rotate(WM_ROTATION * Math.PI / 180);
+      ctx.drawImage(img, 0, 0, wmS, wmS);
       ctx.restore();
     }));
   }
-  if (vis.halal) {
-    tasks.push(loadImg(ASSET_BASE+'halal-logo.png', img => {
-      const hh = H * .11;
-      const hw = img.naturalWidth * (hh / img.naturalHeight);
+  if (S.vis.halal) {
+    tasks.push(loadImg(ASSET_BASE + 'halal-logo.png', img => {
+      const hw = W * HALAL_WIDTH;
+      const hh = img.naturalHeight * (hw / img.naturalWidth);
       ctx.save();
-      ctx.filter = halalColor === 'zwart' ? 'brightness(0)' : 'invert(1)';
-      ctx.drawImage(img, W - W*.03 - hw, H*.025, hw, hh);
+      ctx.filter = S.halalColor === 'zwart' ? 'brightness(0)' : 'invert(1)';
+      ctx.drawImage(img, W - W * HALAL_RIGHT - hw, H * HALAL_TOP, hw, hh);
       ctx.restore();
     }));
   }
   const cSrc = document.getElementById('pcustImg').src;
-  if (custVisible && cSrc.startsWith('blob')) {
+  if (S.custVisible && cSrc.startsWith('blob')) {
     const cl = document.getElementById('pcust');
-    const cx = parseFloat(cl.style.left)*scale||0;
-    const cy = parseFloat(cl.style.top)*scale||0;
-    const cw = parseFloat(cl.style.width)*scale||80*scale;
-    const ch = parseFloat(cl.style.height)*scale||80*scale;
-    tasks.push(loadImg(cSrc, img => ctx.drawImage(img,cx,cy,cw,ch)));
+    const cx = parseFloat(cl.style.left) * sc || 0;
+    const cy = parseFloat(cl.style.top)  * sc || 0;
+    const cw = parseFloat(cl.style.width)  * sc || 80 * sc;
+    const ch = parseFloat(cl.style.height) * sc || 80 * sc;
+    tasks.push(loadImg(cSrc, img => ctx.drawImage(img, cx, cy, cw, ch)));
   }
 
   Promise.all([
-    document.fonts.load(`900 ${48*scale}px 'Barlow Condensed'`),
-    document.fonts.load(`700 ${48*scale}px 'Barlow Condensed'`),
+    document.fonts.load(`900 ${48*sc}px 'Barlow Condensed'`),
+    document.fonts.load(`700 ${48*sc}px 'Barlow Condensed'`),
   ]).then(() => Promise.all(tasks)).then(() => {
     const a = document.createElement('a');
     a.download = 'family-chicken-poster.png';
@@ -1495,8 +1518,8 @@ function drawKickerCanvas(ctx, p, x, y, W, H, scale) {
   const fw = W / scale;
   const kfs = scaledFS(p.kickerSize || 14, fw, fh) * scale;
   ctx.font = `900 ${kfs}px 'Barlow Condensed',sans-serif`;
-  const bw  = ctx.measureText(p.kicker).width + 14*scale;
-  const bh  = kfs * 1.55;
+  const bw = ctx.measureText(p.kicker).width + 14*scale;
+  const bh = kfs * KICKER_H_RATIO;
   const rotation = (p.kickerRotation ?? -10) * Math.PI / 180;
   ctx.save();
   ctx.translate(x + bw / 2, y + bh / 2);
@@ -1518,28 +1541,26 @@ function drawNameCanvas(ctx, p, x, y, nw, W, H, scale) {
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   let oy = 0;
   p.name.split('\n').forEach((line, li) => {
-    ctx.fillText(line, x, y + oy + li * nfs * .95);
+    ctx.fillText(line, x, y + oy + li * nfs * NAME_LINE_H);
   });
-  oy += p.name.split('\n').length * nfs * .95 + 4*scale;
+  oy += p.name.split('\n').length * nfs * NAME_LINE_H + 4*scale;
   if (p.price && p.showPrice !== false) {
     const pfs = scaledFS(15, fw, fh) * scale;
     ctx.font = `700 ${pfs}px 'Barlow Condensed',sans-serif`;
-    ctx.fillStyle = p.priceColor || lighten(S.accent, 35);
+    ctx.fillStyle = p.priceColor || lighten(S.accent, PRICE_LIGHTEN);
     ctx.fillText(p.price, x, y + oy);
   }
 }
 
-// ── RESET ─────────────────────────────────────────────────
+// ── RESET ────────────────────────────────────────────────
 function resetAll() {
-  S = {count:2,active:0,products:[],accent:'#E8650A',colorL:'#cf5e02',colorR:'#000000',fmtW:380,fmtH:537,fmtKey:'a4p',zoom:1.0};
-  vis = {wm:true,halal:true};
-  custVisible = false;
-  custState = {x:null,y:null,w:80,h:80};
+  S = buildDefaultState();
   initProducts();
-  document.getElementById('clrA').value = '#E8650A';
-  document.getElementById('clrL').value = '#cf5e02';
-  document.getElementById('clrR').value = '#000000';
-  setHalalColor('wit');
+  applyLayoutPreset();
+  document.getElementById('clrA').value = DEFAULTS.accent;
+  document.getElementById('clrL').value = DEFAULTS.colorL;
+  document.getElementById('clrR').value = DEFAULTS.colorR;
+  setHalalColor(DEFAULTS.halalColor);
   document.getElementById('pcustImg').src = '';
   document.getElementById('pcust').style.display = 'none';
   document.getElementById('custThumb').classList.remove('show');
@@ -1547,12 +1568,10 @@ function resetAll() {
   document.getElementById('togCust').classList.remove('on');
   document.getElementById('togWm').classList.add('on');
   document.getElementById('togHalal').classList.add('on');
-  document.getElementById('halalWit').classList.add('on');
-  document.getElementById('halalZwart').classList.remove('on');
   document.getElementById('libSearch').value = '';
-  document.getElementById('poster').style.transform = 'scale(1)';
-  document.getElementById('zoomVal').textContent = '100%';
-  renderPoster(); buildTabs(); loadFields(); filterLib();
+  document.getElementById('poster').style.transform = `scale(${DEFAULTS.zoom})`;
+  document.getElementById('zoomVal').textContent = Math.round(DEFAULTS.zoom * 100) + '%';
+  update(); filterLib();
   showToast('Reset ✓');
 }
 
